@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KPI System – Manager Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:wght@700;900&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --primary-light: #2a5185;
+      --accent: #e8a020;
+      --accent-light: #fdf3e0;
+      --surface: #ffffff;
+      --bg: #f4f6fb;
+      --text: #1a2233;
+      --muted: #6b7a99;
+      --border: #e2e8f0;
+      --success: #1db87a;
+      --warning: #f5a623;
+      --danger: #e53e3e;
+      --sidebar-w: 260px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      padding: 0 0 20px;
+      overflow-y: auto;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 22px 22px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 8px;
+    }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: white;
+    }
+    .brand-name { font-family: 'Fraunces', serif; font-size: 17px; color: white; }
+    .sidebar-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      padding: 12px 22px 6px;
+      margin-top: 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 22px;
+      margin: 1px 10px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.65);
+      cursor: pointer;
+      transition: all 0.18s;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+    .nav-item.active { background: rgba(232,160,32,0.18); color: var(--accent); }
+    .nav-item .bi { font-size: 17px; width: 20px; text-align: center; }
+    .badge-nav {
+      margin-left: auto;
+      background: var(--accent);
+      color: white;
+      border-radius: 20px;
+      font-size: 11px;
+      padding: 1px 8px;
+      font-weight: 700;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 22px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: white;
+      flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: white; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+    /* MAIN */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .page-title {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted);
+      position: relative;
+    }
+    .notif-dot {
+      position: absolute;
+      top: 7px; right: 7px;
+      width: 7px; height: 7px;
+      background: var(--danger);
+      border-radius: 50%;
+    }
+    .content { padding: 26px 28px; flex: 1; }
+
+    /* STAT CARDS */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 22px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 60px; height: 60px;
+      border-radius: 0 14px 0 60px;
+      opacity: 0.07;
+    }
+    .stat-card.blue::after { background: var(--primary); }
+    .stat-card.gold::after { background: var(--accent); }
+    .stat-card.green::after { background: var(--success); }
+    .stat-card.red::after { background: var(--danger); }
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .stat-icon.blue { background: rgba(26,58,92,0.1); color: var(--primary); }
+    .stat-icon.gold { background: var(--accent-light); color: var(--accent); }
+    .stat-icon.green { background: rgba(29,184,122,0.1); color: var(--success); }
+    .stat-icon.red { background: rgba(229,62,62,0.1); color: var(--danger); }
+    .stat-val { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .stat-change {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .stat-change.up { color: var(--success); }
+    .stat-change.down { color: var(--danger); }
+
+    /* SECTION CARDS */
+    .section-card {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: 16px;
+      color: var(--text);
+    }
+    .section-body { padding: 18px 22px; }
+
+    /* BTN */
+    .btn-primary-custom {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-primary-custom:hover { background: var(--primary-light); }
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* TABLE */
+    .kpi-table { width: 100%; border-collapse: collapse; }
+    .kpi-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      padding: 10px 14px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-table td {
+      padding: 13px 14px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .kpi-table tr:last-child td { border-bottom: none; }
+    .kpi-table tr:hover td { background: rgba(244,246,251,0.6); }
+    .progress-bar-wrap {
+      background: var(--bg);
+      border-radius: 20px;
+      height: 7px;
+      width: 100px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      background: var(--primary);
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-status.achieved { background: rgba(29,184,122,0.12); color: var(--success); }
+    .badge-status.in-progress { background: rgba(232,160,32,0.12); color: var(--warning); }
+    .badge-status.pending { background: rgba(107,122,153,0.12); color: var(--muted); }
+    .badge-status.overdue { background: rgba(229,62,62,0.1); color: var(--danger); }
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .action-btn:hover { color: var(--primary); background: var(--bg); }
+
+    /* MODAL */
+    .modal-header { border-bottom: 1px solid var(--border); }
+    .modal-content { border-radius: 16px; border: none; }
+    .modal-title { font-family: 'Fraunces', serif; }
+
+    /* STAFF TABLE */
+    .staff-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 3px 10px 3px 4px;
+      font-size: 12px;
+    }
+    .staff-chip .av {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* GRID LAYOUT */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+
+    /* Page sections */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="bi bi-bar-chart-fill"></i></div>
+    <span class="brand-name">KPI Manager</span>
+  </div>
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item active" onclick="showPage('dashboard',this)">
+    <i class="bi bi-grid-1x2-fill"></i> Dashboard
+  </a>
+  <div class="sidebar-section">KPI Management</div>
+  <a class="nav-item" onclick="showPage('kpiManage',this)">
+    <i class="bi bi-list-check"></i> Manage KPIs
+  </a>
+  <a class="nav-item" onclick="showPage('verify',this)">
+    <i class="bi bi-shield-check"></i> Verify Evidence <span class="badge-nav" id="verifyNavBadge">3</span>
+  </a>
+  <div class="sidebar-section">Team</div>
+  <a class="nav-item" onclick="showPage('staff',this)">
+    <i class="bi bi-people-fill"></i> Staff Members
+  </a>
+  <div class="sidebar-section">Account</div>
+  <a class="nav-item" onclick="showPage('profile',this)">
+    <i class="bi bi-person-circle"></i> My Profile
+  </a>
+  <a class="nav-item" href="login.html">
+    <i class="bi bi-box-arrow-left"></i> Sign Out
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar" id="sidebarAvatar" style="overflow:hidden;">JD</div>
+      <div>
+        <div class="user-name" id="sidebarUserName">Dr. John Doe</div>
+        <div class="user-role">Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <div class="icon-btn" id="notifBtn" style="position:relative;" onclick="toggleNotifPanel()">
+        <i class="bi bi-bell"></i>
+        <div class="notif-dot" id="notifDot"></div>
+      </div>
+      <div id="notifPanel" style="display:none;position:absolute;top:58px;right:28px;width:340px;background:white;border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fraunces',serif;font-size:15px;font-weight:700;">Notifications</span>
+          <button onclick="clearAllNotifications()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;">Clear all</button>
+        </div>
+        <div id="notifList" style="max-height:320px;overflow-y:auto;"></div>
+      </div>
+      <div class="avatar" id="topbarAvatar" style="cursor:pointer;" onclick="showPage('profile',document.querySelector('[onclick*=profile]'))">JD</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="page-section active" id="page-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon blue"><i class="bi bi-list-check"></i></div>
+          <div class="stat-val">24</div>
+          <div class="stat-label">Total KPIs</div>
+          <div class="stat-change up"><i class="bi bi-arrow-up-short"></i>+3 this month</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+          <div class="stat-val">14</div>
+          <div class="stat-label">Achieved</div>
+          <div class="stat-change up"><i class="bi bi-arrow-up-short"></i>58% completion rate</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-icon gold"><i class="bi bi-arrow-repeat"></i></div>
+          <div class="stat-val">7</div>
+          <div class="stat-label">In Progress</div>
+          <div class="stat-change up"><i class="bi bi-arrow-up-short"></i>On track</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+          <div class="stat-val">3</div>
+          <div class="stat-label">Overdue</div>
+          <div class="stat-change down"><i class="bi bi-arrow-down-short"></i>Needs attention</div>
+        </div>
+      </div>
+
+      <div class="grid-3-1 mb-4">
+        <div class="section-card">
+          <div class="section-header">
+            <span class="section-title">KPI Achievement Overview</span>
+            <select id="achievementFilter" class="form-select form-select-sm" style="width:140px;font-size:13px;" onchange="filterAchievementChart(this.value)">
+              <option value="month">This Month</option>
+              <option value="quarter">This Quarter</option>
+              <option value="year">This Year</option>
+            </select>
+          </div>
+          <div class="section-body">
+            <canvas id="achievementChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">
+            <span class="section-title">By Category</span>
+          </div>
+          <div class="section-body">
+            <canvas id="categoryChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="section-card">
+          <div class="section-header">
+            <span class="section-title">Recent KPI Updates</span>
+            <button class="btn-outline" onclick="showPage('kpiManage',null)">View All</button>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <table class="kpi-table">
+              <thead>
+                <tr>
+                  <th>KPI Title</th>
+                  <th>Staff</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recentKpiBody">
+                <tr>
+                  <td><strong>Research Publications</strong></td>
+                  <td><span class="staff-chip"><span class="av">AS</span>Ali S.</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:80%;background:var(--success);"></div></div>
+                      <span style="font-size:12px;color:var(--muted);">80%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge-status in-progress">In Progress</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Student Pass Rate</strong></td>
+                  <td><span class="staff-chip"><span class="av">NR</span>Nora R.</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%;background:var(--success);"></div></div>
+                      <span style="font-size:12px;color:var(--muted);">100%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge-status achieved">Achieved</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Community Service</strong></td>
+                  <td><span class="staff-chip"><span class="av">KL</span>Kevin L.</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:30%;background:var(--danger);"></div></div>
+                      <span style="font-size:12px;color:var(--muted);">30%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge-status overdue">Overdue</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Industry Grants</strong></td>
+                  <td><span class="staff-chip"><span class="av">MH</span>Maya H.</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:55%;background:var(--warning);"></div></div>
+                      <span style="font-size:12px;color:var(--muted);">55%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge-status in-progress">In Progress</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Pending Evidence Verification</span>
+          <span class="badge-status in-progress" id="pendingCount" style="font-size:12px;">3 pending</span>
+        </div>
+        <div class="section-body" style="padding:0;">
+          <table class="kpi-table">
+            <thead><tr><th>Staff</th><th>KPI</th><th>Evidence</th><th>Submitted</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="staff-chip"><span class="av">AS</span>Ali Samsuri</span></td>
+                <td>Research Publications</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-pdf"></i> proof_Q1.pdf</a></td>
+                <td style="color:var(--muted);font-size:13px;">2 days ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);margin-left:4px;" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="staff-chip"><span class="av">MH</span>Maya Halim</span></td>
+                <td>Industry Grants</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-image"></i> grant_letter.png</a></td>
+                <td style="color:var(--muted);font-size:13px;">1 day ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);margin-left:4px;" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="staff-chip"><span class="av">KL</span>Kevin Lim</span></td>
+                <td>Community Service</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-earmark-image"></i> event_photos.zip</a></td>
+                <td style="color:var(--muted);font-size:13px;">3 days ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);margin-left:4px;" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-section" id="page-kpiManage">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <input id="kpiSearch" type="text" class="form-control" placeholder="Search KPIs..." style="width:240px;border-radius:8px;font-size:13px;padding:9px 14px;"/>
+        </div>
+        <button class="btn-primary-custom" onclick="openNewKPI()"><i class="bi bi-plus-lg"></i> New KPI</button>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">All KPIs</span>
+          <div style="display:flex;gap:8px;">
+            <select id="kpiStatusFilter" class="form-select form-select-sm" style="width:130px;font-size:13px;"><option value="">All Status</option><option value="Achieved">Achieved</option><option value="In Progress">In Progress</option><option value="Overdue">Overdue</option><option value="Pending">Pending</option></select>
+            <select id="kpiCategoryFilter" class="form-select form-select-sm" style="width:140px;font-size:13px;"><option value="">All Categories</option><option value="Research">Research</option><option value="Teaching">Teaching</option><option value="Service">Service</option></select>
+          </div>
+        </div>
+        <div style="padding:0;">
+          <table class="kpi-table" id="kpiTableFull">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>KPI Title</th>
+                <th>Staff</th>
+                <th>Department</th>
+                <th>Target</th>
+                <th>Start Date</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="kpiTableBody">
+              <tr data-staff="Ali Samsuri">
+                <td>1</td>
+                <td><strong>Research Publications</strong><br><span style="font-size:12px;color:var(--muted);">Publish 3 journal papers</span></td>
+                <td><span class="staff-chip"><span class="av">AS</span>Ali Samsuri</span></td>
+                <td>Research Dept.</td>
+                <td>3 papers</td>
+                <td>01/01/2025</td>
+                <td>31/12/2025</td>
+                <td><span class="badge-status in-progress">In Progress</span></td>
+                <td>
+                  <button class="action-btn" title="Edit" onclick="openEditKPI(this)"><i class="bi bi-pencil"></i></button>
+                  <button class="action-btn" title="Delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              <tr data-staff="Nora Rahman">
+                <td>2</td>
+                <td><strong>Student Pass Rate</strong><br><span style="font-size:12px;color:var(--muted);">Maintain 90% pass rate</span></td>
+                <td><span class="staff-chip"><span class="av">NR</span>Nora Rahman</span></td>
+                <td>Teaching Dept.</td>
+                <td>90%</td>
+                <td>01/01/2025</td>
+                <td>30/06/2025</td>
+                <td><span class="badge-status achieved">Achieved</span></td>
+                <td>
+                  <button class="action-btn" title="Edit" onclick="openEditKPI(this)"><i class="bi bi-pencil"></i></button>
+                  <button class="action-btn" title="Delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              <tr data-staff="Kevin Lim">
+                <td>3</td>
+                <td><strong>Community Service</strong><br><span style="font-size:12px;color:var(--muted);">5 outreach programs</span></td>
+                <td><span class="staff-chip"><span class="av">KL</span>Kevin Lim</span></td>
+                <td>Service Dept.</td>
+                <td>5 events</td>
+                <td>01/01/2025</td>
+                <td>31/03/2025</td>
+                <td><span class="badge-status overdue">Overdue</span></td>
+                <td>
+                  <button class="action-btn" title="Edit" onclick="openEditKPI(this)"><i class="bi bi-pencil"></i></button>
+                  <button class="action-btn" title="Delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              <tr data-staff="Maya Halim">
+                <td>4</td>
+                <td><strong>Industry Grants</strong><br><span style="font-size:12px;color:var(--muted);">Secure 2 industry grants</span></td>
+                <td><span class="staff-chip"><span class="av">MH</span>Maya Halim</span></td>
+                <td>Research Dept.</td>
+                <td>2 grants</td>
+                <td>01/01/2025</td>
+                <td>30/09/2025</td>
+                <td><span class="badge-status in-progress">In Progress</span></td>
+                <td>
+                  <button class="action-btn" title="Edit" onclick="openEditKPI(this)"><i class="bi bi-pencil"></i></button>
+                  <button class="action-btn" title="Delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-section" id="page-verify">
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Evidence Verification Queue</span>
+          <span class="badge-status in-progress" id="verifyPendingCount">3 pending</span>
+        </div>
+        <div style="padding:0;">
+          <table class="kpi-table">
+            <thead><tr><th>Staff</th><th>KPI</th><th>Evidence File</th><th>Notes</th><th>Submitted</th><th>Action</th></tr></thead>
+            <tbody id="verifyBody">
+              <tr>
+                <td><span class="staff-chip"><span class="av">AS</span>Ali Samsuri</span></td>
+                <td>Research Publications</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-pdf-fill"></i> proof_Q1.pdf</a></td>
+                <td style="font-size:13px;color:var(--muted);">Published in IEEE Xplore</td>
+                <td style="font-size:13px;color:var(--muted);">2 days ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);margin-right:4px;" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="staff-chip"><span class="av">MH</span>Maya Halim</span></td>
+                <td>Industry Grants</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-image-fill"></i> grant_letter.png</a></td>
+                <td style="font-size:13px;color:var(--muted);">Grant from MOSTI RM50k</td>
+                <td style="font-size:13px;color:var(--muted);">1 day ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);margin-right:4px;" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="staff-chip"><span class="av">KL</span>Kevin Lim</span></td>
+                <td>Community Service</td>
+                <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-earmark-image"></i> event_photos.zip</a></td>
+                <td style="font-size:13px;color:var(--muted);">3 events completed</td>
+                <td style="font-size:13px;color:var(--muted);">3 days ago</td>
+                <td>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--success);margin-right:4px;" onclick="verifyEvidence(this,'Approved')"><i class="bi bi-check-lg"></i> Approve</button>
+                  <button class="btn-primary-custom" style="padding:5px 12px;font-size:12px;background:var(--danger);" onclick="verifyEvidence(this,'Rejected')"><i class="bi bi-x-lg"></i> Reject</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-section" id="page-staff">
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Staff Members</span>
+          <input id="staffSearch" type="text" class="form-control" placeholder="Search staff..." style="width:200px;border-radius:8px;font-size:13px;padding:8px 12px;"/>
+        </div>
+        <div class="section-body">
+          <div class="row g-3">
+            <div class="col-md-3" onclick="">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+                <div class="avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 12px;">AS</div>
+                <div class="staff-name" style="font-weight:600;font-size:14px;">Ali Samsuri</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Research Dept.</div>
+                <div style="display:flex;justify-content:center;gap:12px;">
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--primary);">5</div><div style="font-size:11px;color:var(--muted);">KPIs</div></div>
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--success);">80%</div><div style="font-size:11px;color:var(--muted);">Done</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+                <div class="avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 12px;background:#6b7a99;">NR</div>
+                <div class="staff-name" style="font-weight:600;font-size:14px;">Nora Rahman</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Teaching Dept.</div>
+                <div style="display:flex;justify-content:center;gap:12px;">
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--primary);">4</div><div style="font-size:11px;color:var(--muted);">KPIs</div></div>
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--success);">100%</div><div style="font-size:11px;color:var(--muted);">Done</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+                <div class="avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 12px;background:#e8a020;">KL</div>
+                <div class="staff-name" style="font-weight:600;font-size:14px;">Kevin Lim</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Service Dept.</div>
+                <div style="display:flex;justify-content:center;gap:12px;">
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--primary);">3</div><div style="font-size:11px;color:var(--muted);">KPIs</div></div>
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--danger);">30%</div><div style="font-size:11px;color:var(--muted);">Done</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+                <div class="avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 12px;background:#1db87a;">MH</div>
+                <div class="staff-name" style="font-weight:600;font-size:14px;">Maya Halim</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Research Dept.</div>
+                <div style="display:flex;justify-content:center;gap:12px;">
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--primary);">4</div><div style="font-size:11px;color:var(--muted);">KPIs</div></div>
+                  <div style="text-align:center;"><div style="font-weight:700;font-size:16px;color:var(--warning);">55%</div><div style="font-size:11px;color:var(--muted);">Done</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-section" id="page-profile">
+      <div class="grid-2">
+        <div class="section-card">
+          <div class="section-header"><span class="section-title">Profile Information</span></div>
+          <div class="section-body">
+            <div style="text-align:center;margin-bottom:24px;">
+              <div style="position:relative;display:inline-block;margin-bottom:12px;">
+                <div id="profileAvatarDisplay" class="avatar" style="width:72px;height:72px;font-size:26px;margin:0 auto;overflow:hidden;">JD</div>
+                <label for="profilePicInput" style="position:absolute;bottom:0;right:0;width:24px;height:24px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid white;">
+                  <i class="bi bi-camera-fill" style="font-size:11px;color:white;"></i>
+                </label>
+                <input type="file" id="profilePicInput" accept="image/*" style="display:none;" onchange="previewProfilePic(this)"/>
+              </div>
+              <div style="font-weight:700;font-size:18px;" id="profileDisplayName">Dr. John Doe</div>
+              <div style="color:var(--muted);font-size:13px;">Manager · Research Department</div>
+            </div>
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label" style="font-size:13px;">First Name</label>
+                <input type="text" id="profileFirstName" class="form-control" value="John" style="font-size:14px;"/>
+              </div>
+              <div class="col-6">
+                <label class="form-label" style="font-size:13px;">Last Name</label>
+                <input type="text" id="profileLastName" class="form-control" value="Doe" style="font-size:14px;"/>
+              </div>
+              <div class="col-12">
+                <label class="form-label" style="font-size:13px;">Email</label>
+                <input type="email" class="form-control" value="john.doe@university.edu.my" style="font-size:14px;"/>
+              </div>
+              <div class="col-12">
+                <label class="form-label" style="font-size:13px;">Department</label>
+                <input type="text" class="form-control" value="Research Department" style="font-size:14px;"/>
+              </div>
+              <div class="col-12" style="display:flex;gap:10px;">
+                <button class="btn-primary-custom" onclick="saveProfileChanges()"><i class="bi bi-check-lg"></i> Save Changes</button>
+                <button class="btn-primary-custom" style="background:var(--danger);" onclick="if(confirm('Delete account?'))window.location.href='login.html'"><i class="bi bi-trash"></i> Delete Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><span class="section-title">Change Password</span></div>
+          <div class="section-body">
+            <div class="mb-3">
+              <label class="form-label" style="font-size:13px;">Current Password</label>
+              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" style="font-size:13px;">New Password</label>
+              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" style="font-size:13px;">Confirm New Password</label>
+              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
+            </div>
+            <button class="btn-primary-custom"><i class="bi bi-shield-lock"></i> Update Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></div><div class="modal fade" id="kpiModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="kpiModalTitle">New KPI</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="kpiEditRow"/>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:13px;">KPI Title</label>
+            <input id="kpiTitle" type="text" class="form-control" placeholder="e.g. Research Publications"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:13px;">Description</label>
+            <textarea id="kpiDesc" class="form-control" rows="2" placeholder="Describe what this KPI entails..."></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Assign to Staff</label>
+            <select id="kpiStaff" class="form-select"><option value="">-- Select Staff --</option><option>Ali Samsuri</option><option>Nora Rahman</option><option>Kevin Lim</option><option>Maya Halim</option></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Department</label>
+            <input id="kpiDepartment" type="text" class="form-control" placeholder="e.g. Research Dept."/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Target</label>
+            <input id="kpiTarget" type="text" class="form-control" placeholder="e.g. 3 papers"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Start Date</label>
+            <input id="kpiStartDate" type="date" class="form-control"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Deadline</label>
+            <input id="kpiDeadline" type="date" class="form-control"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-primary-custom" id="kpiSaveBtn" onclick="saveKPI()" data-bs-dismiss="modal"><i class="bi bi-plus-lg"></i> Create KPI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+  const pageTitles = { dashboard:'Dashboard', kpiManage:'Manage KPIs', verify:'Verify Evidence', staff:'Staff Members', profile:'My Profile' };
+
+  function showPage(id, el) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.getElementById('pageTitle').textContent = pageTitles[id];
+    if (el) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      el.classList.add('active');
+    }
+  }
+
+  // ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+  const notifications = [
+    { id:1, icon:'bi-exclamation-triangle-fill', color:'var(--danger)', title:'Overdue KPI Alert', msg:'Community Service is overdue by Kevin Lim.', time:'2 hours ago', read:false },
+    { id:2, icon:'bi-check-circle-fill', color:'var(--success)', title:'KPI Achieved', msg:'Nora Rahman completed Student Pass Rate at 100%.', time:'1 day ago', read:false },
+    { id:3, icon:'bi-file-earmark-check-fill', color:'var(--primary)', title:'Evidence Submitted', msg:'Ali Samsuri submitted proof for Research Publications.', time:'2 days ago', read:false },
+  ];
+
+  function renderNotifications() {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+    const unread = notifications.filter(n => !n.read);
+    document.getElementById('notifDot').style.display = unread.length ? 'block' : 'none';
+    if (notifications.length === 0) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">No notifications</div>';
+      return;
+    }
+    list.innerHTML = notifications.map(n => `
+      <div onclick="markRead(${n.id})" style="padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;background:${n.read ? 'white' : 'rgba(26,58,92,0.03)'};display:flex;gap:12px;align-items:flex-start;transition:background 0.15s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='${n.read ? 'white' : 'rgba(26,58,92,0.03)'}'">
+        <div style="width:34px;height:34px;border-radius:50%;background:${n.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="bi ${n.icon}" style="color:${n.color};font-size:14px;"></i>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:${n.read ? '500' : '700'};font-size:13px;">${n.title}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${n.msg}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">${n.time}</div>
+        </div>
+        ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:4px;"></div>' : ''}
+      </div>`).join('');
+  }
+
+  function markRead(id) {
+    const n = notifications.find(x => x.id === id);
+    if (n) n.read = true;
+    renderNotifications();
+  }
+
+  function clearAllNotifications() {
+    notifications.length = 0;
+    renderNotifications();
+  }
+
+  function toggleNotifPanel() {
+    const panel = document.getElementById('notifPanel');
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) renderNotifications();
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = document.getElementById('notifBtn');
+    const panel = document.getElementById('notifPanel');
+    if (panel && btn && !btn.contains(e.target) && !panel.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  // ── PROFILE ────────────────────────────────────────────────────────────────
+  let pendingProfilePicDataUrl = null;
+
+  function previewProfilePic(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      pendingProfilePicDataUrl = e.target.result;
+      const display = document.getElementById('profileAvatarDisplay');
+      display.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+
+  function saveProfileChanges() {
+    const firstName = document.getElementById('profileFirstName').value.trim();
+    const lastName = document.getElementById('profileLastName').value.trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    const initials = [firstName[0] || '', lastName[0] || ''].join('').toUpperCase();
+
+    // Update profile display name
+    if (fullName) document.getElementById('profileDisplayName').textContent = 'Dr. ' + fullName;
+
+    // Update sidebar name
+    if (fullName) document.getElementById('sidebarUserName').textContent = 'Dr. ' + fullName;
+
+    // Update avatars (topbar + sidebar)
+    const topbar = document.getElementById('topbarAvatar');
+    const sidebar = document.getElementById('sidebarAvatar');
+
+    if (pendingProfilePicDataUrl) {
+      const imgTag = `<img src="${pendingProfilePicDataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+      topbar.innerHTML = imgTag;
+      sidebar.innerHTML = imgTag;
+    } else {
+      if (initials) {
+        topbar.textContent = initials;
+        sidebar.textContent = initials;
+      }
+    }
+
+    // Show success feedback
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-all"></i> Saved!';
+    btn.style.background = 'var(--success)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+  }
+
+  // ── KPI TABLE helpers ──────────────────────────────────────────────────────
+  let globalPendingCount = 3; // Establish a global counter for accurate sync across views
+
+  function deleteRow(btn) {
+    if (confirm('Are you sure you want to delete this item?')) {
+      btn.closest('tr').remove();
+      // Note: Removed updateVerifyPendingCount() here as deleting a standard KPI 
+      // should not decrement our pending evidence verifications count.
+    }
+  }
+
+  function updateVerifyPendingCount() {
+    // Utilize the global state to ensure uniformity across the UI
+    const pendingLabel = document.getElementById('verifyPendingCount');
+    const pendingLabel2 = document.getElementById('pendingCount');
+    const navBadge = document.getElementById('verifyNavBadge');
+    
+    const text = `${globalPendingCount} pending`;
+    if (pendingLabel) pendingLabel.textContent = text;
+    if (pendingLabel2) pendingLabel2.textContent = text;
+    
+    if (navBadge) {
+      navBadge.textContent = globalPendingCount;
+      navBadge.style.display = globalPendingCount > 0 ? 'inline-block' : 'none';
+    }
+  }
+
+  function filterStaffList(term) {
+    const q = (term || '').trim().toLowerCase();
+    const cards = document.querySelectorAll('#page-staff .col-md-3');
+    cards.forEach(card => {
+      const name = (card.querySelector('.staff-name')?.textContent || '').trim().toLowerCase();
+      let visible = true;
+      if (q) {
+        const firstWord = name.split(/\s+/)[0] || '';
+        visible = firstWord.startsWith(q);
+      }
+      card.style.display = visible ? '' : 'none';
+    });
+  }
+
+  function verifyEvidence(btn, action) {
+    const clickedRow = btn.closest('tr');
+    
+    // Extract identifiers to match the row across both tables 
+    // (Dashboard Pending Table AND Verify Evidence Page Table)
+    const staffName = clickedRow.cells[0].textContent.trim();
+    const kpiName = clickedRow.cells[1].textContent.trim();
+
+    // Find matching rows in both HTML tables
+    const allTableRows = Array.from(document.querySelectorAll('.kpi-table tbody tr'));
+    const rowsToUpdate = [clickedRow];
+
+    allTableRows.forEach(row => {
+      if (row !== clickedRow && row.cells.length >= 5) {
+        const rStaff = row.cells[0].textContent.trim();
+        const rKpi = row.cells[1].textContent.trim();
+        // Check if it's the exact same pending evidence item
+        if (rStaff === staffName && rKpi === kpiName && row.querySelector('button[onclick*="verifyEvidence"]')) {
+           rowsToUpdate.push(row);
+        }
+      }
+    });
+
+    // Update the UI for all matched rows and remove them gracefully
+    rowsToUpdate.forEach(row => {
+      const actionCell = row.cells[row.cells.length - 1];
+      if (action === 'Approved') {
+        actionCell.innerHTML = '<span class="badge-status achieved"><i class="bi bi-check-circle-fill me-1"></i>Approved</span>';
+      } else {
+        actionCell.innerHTML = '<span class="badge-status overdue"><i class="bi bi-x-circle-fill me-1"></i>Rejected</span>';
+      }
+      
+      // Delay removal slightly so the user can visibly see the Status change to Approved/Rejected
+      setTimeout(() => {
+        if (row.parentNode) row.remove();
+      }, 800);
+    });
+
+    // Decrement counter and update labels
+    if (globalPendingCount > 0) {
+      globalPendingCount--;
+    }
+    updateVerifyPendingCount();
+  }
+
+  // ── KPI MODAL: open for new ───────────────────────────────────────────────
+  function openNewKPI() {
+    document.getElementById('kpiModalTitle').textContent = 'New KPI';
+    document.getElementById('kpiSaveBtn').innerHTML = '<i class="bi bi-plus-lg"></i> Create KPI';
+    document.getElementById('kpiEditRow').value = '';
+    ['kpiTitle','kpiDesc','kpiDepartment','kpiTarget','kpiStartDate','kpiDeadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('kpiStaff').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('kpiModal'));
+    modal.show();
+  }
+
+  // ── KPI MODAL: open for edit ──────────────────────────────────────────────
+  function openEditKPI(btn) {
+    const row = btn.closest('tr');
+    const cells = row.cells;
+
+    // Extract title and description from cell[1]
+    const titleEl = cells[1].querySelector('strong');
+    const descEl = cells[1].querySelector('span');
+    const title = titleEl ? titleEl.textContent.trim() : '';
+    const desc = descEl ? descEl.textContent.trim() : '';
+
+    // Staff name from chip
+    const staffChip = cells[2].querySelector('.staff-chip');
+    const staffName = staffChip ? staffChip.textContent.trim() : '';
+
+    const department = cells[3].textContent.trim();
+    const target = cells[4].textContent.trim();
+
+    // Convert DD/MM/YYYY to YYYY-MM-DD for date inputs
+    function toInputDate(str) {
+      if (!str || str === '--') return '';
+      const parts = str.trim().split('/');
+      if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      return '';
+    }
+    const startDate = toInputDate(cells[5].textContent.trim());
+    const deadline = toInputDate(cells[6].textContent.trim());
+
+    document.getElementById('kpiModalTitle').textContent = 'Edit KPI';
+    document.getElementById('kpiSaveBtn').innerHTML = '<i class="bi bi-check-lg"></i> Save Changes';
+    document.getElementById('kpiEditRow').value = Array.from(row.parentNode.children).indexOf(row);
+
+    document.getElementById('kpiTitle').value = title;
+    document.getElementById('kpiDesc').value = desc;
+    // Try to match staff option
+    const staffSel = document.getElementById('kpiStaff');
+    staffSel.value = '';
+    Array.from(staffSel.options).forEach(opt => {
+      if (opt.text.trim() === staffName) staffSel.value = opt.value;
+    });
+    document.getElementById('kpiDepartment').value = department;
+    document.getElementById('kpiTarget').value = target;
+    document.getElementById('kpiStartDate').value = startDate;
+    document.getElementById('kpiDeadline').value = deadline;
+
+    // Store reference to the actual row for saving
+    document.getElementById('kpiModal').dataset.editRow = '';
+    window._editingRow = row;
+
+    const modal = new bootstrap.Modal(document.getElementById('kpiModal'));
+    modal.show();
+  }
+
+  let kpiCount = 4;
+
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === '--') return '--';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return '--';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  function saveKPI() {
+    const title = document.getElementById('kpiTitle').value.trim();
+    const desc = document.getElementById('kpiDesc').value.trim();
+    const staff = document.getElementById('kpiStaff').value.trim();
+    const department = document.getElementById('kpiDepartment').value.trim();
+    const target = document.getElementById('kpiTarget').value.trim();
+    const startDate = formatDate(document.getElementById('kpiStartDate').value);
+    const deadline = formatDate(document.getElementById('kpiDeadline').value);
+
+    if (!title) { alert('Please add a KPI title before saving.'); return; }
+    if (!staff) { alert('Please assign to a staff member.'); return; }
+
+    const staffInitials = staff.split(' ').map(n => n[0]||'').slice(0,2).join('').toUpperCase();
+    const isEdit = window._editingRow != null;
+
+    if (isEdit) {
+      // Update existing row
+      const row = window._editingRow;
+      const cells = row.cells;
+      cells[1].innerHTML = `<strong>${title}</strong><br><span style="font-size:12px;color:var(--muted);">${desc || ''}</span>`;
+      cells[2].innerHTML = `<span class="staff-chip"><span class="av">${staffInitials}</span>${staff}</span>`;
+      cells[3].textContent = department || 'General';
+      cells[4].textContent = target || 'Target';
+      cells[5].textContent = startDate;
+      cells[6].textContent = deadline;
+      window._editingRow = null;
+    } else {
+      // Add new row
+      kpiCount++;
+      const tbody = document.getElementById('kpiTableBody');
+      const tr = document.createElement('tr');
+      tr.dataset.staff = staff;
+      tr.innerHTML = `
+        <td>${kpiCount}</td>
+        <td><strong>${title}</strong><br><span style="font-size:12px;color:var(--muted);">${desc || 'Description here'}</span></td>
+        <td><span class="staff-chip"><span class="av">${staffInitials}</span>${staff}</span></td>
+        <td>${department || 'General'}</td>
+        <td>${target || 'Target'}</td>
+        <td>${startDate}</td>
+        <td>${deadline}</td>
+        <td><span class="badge-status pending">Pending</span></td>
+        <td>
+          <button class="action-btn" title="Edit" onclick="openEditKPI(this)"><i class="bi bi-pencil"></i></button>
+          <button class="action-btn" title="Delete" onclick="deleteRow(this)"><i class="bi bi-trash"></i></button>
+        </td>`;
+      tbody.appendChild(tr);
+
+      const recent = document.getElementById('recentKpiBody');
+      if (recent) {
+        const recentRow = document.createElement('tr');
+        recentRow.innerHTML = `
+          <td><strong>${title}</strong></td>
+          <td><span class="staff-chip"><span class="av">${staffInitials}</span>${staff}</span></td>
+          <td>--</td>
+          <td><span class="badge-status pending">Pending</span></td>`;
+        recent.insertBefore(recentRow, recent.firstChild);
+        while (recent.children.length > 6) { recent.removeChild(recent.lastChild); }
+      }
+    }
+
+    // Reset modal state
+    window._editingRow = null;
+    const searchInput = document.getElementById('kpiSearch');
+    if (searchInput) filterKpiTable(searchInput.value);
+  }
+
+  // Keep addKPI as alias for new button
+  function addKPI() { saveKPI(); }
+
+  function filterKpiTable(term) {
+    const searchTerm = (term || '').trim().toLowerCase();
+    const statusFilter = (document.getElementById('kpiStatusFilter')?.value || '').trim();
+    const categoryFilter = (document.getElementById('kpiCategoryFilter')?.value || '').trim();
+    const rows = document.querySelectorAll('#kpiTableBody tr');
+    rows.forEach(r => {
+      const titleText = (r.cells[1]?.textContent||'').toLowerCase();
+      const statusText = (r.cells[7]?.textContent||'').trim();
+      let matchesSearch = true;
+      if (searchTerm) {
+        matchesSearch = titleText.includes(searchTerm);
+      }
+      const departmentText = (r.cells[3]?.textContent||'').toLowerCase();
+      const matchesCategory = !categoryFilter || departmentText.includes(categoryFilter.toLowerCase());
+      const matchesStatus = !statusFilter || statusText.includes(statusFilter);
+      r.style.display = (matchesSearch && matchesCategory && matchesStatus) ? '' : 'none';
+    });
+  }
+
+  // ── ACHIEVEMENT CHART FILTER ───────────────────────────────────────────────
+  const achievementData = {
+    month: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'],
+      achieved:   [3,5,4,6,5,7,6,8],
+      inProgress: [2,2,3,2,3,2,3,2],
+      overdue:    [1,0,1,1,0,1,0,1]
+    },
+    quarter: {
+      labels: ['Q1','Q2','Q3','Q4'],
+      achieved:   [12,16,18,10],
+      inProgress: [5,6,7,4],
+      overdue:    [2,2,1,3]
+    },
+    year: {
+      labels: ['2021','2022','2023','2024','2025'],
+      achieved:   [30,38,45,52,48],
+      inProgress: [10,12,14,16,14],
+      overdue:    [5,4,6,3,5]
+    }
+  };
+
+  let achievementChart;
+
+  function filterAchievementChart(period) {
+    const d = achievementData[period] || achievementData.month;
+    achievementChart.data.labels = d.labels;
+    achievementChart.data.datasets[0].data = d.achieved;
+    achievementChart.data.datasets[1].data = d.inProgress;
+    achievementChart.data.datasets[2].data = d.overdue;
+    achievementChart.update();
+  }
+
+  // ── STAFF CHART (vertical, scrollable) ────────────────────────────────────
+  let staffChart;
+  const staffChartData = {
+    labels: ['Ali S.','Nora R.','Kevin L.','Maya H.'],
+    data:   [80, 100, 30, 55],
+    colors: ['#1db87a','#1db87a','#e53e3e','#e8a020']
+  };
+
+  function buildStaffChart() {
+    const wrap = document.getElementById('staffChartWrap');
+    const numBars = staffChartData.labels.length;
+    const barWidth = 60; // px per bar
+    const minWidth = Math.max(400, numBars * barWidth + 100);
+    wrap.style.width = minWidth + 'px';
+
+    if (staffChart) staffChart.destroy();
+    staffChart = new Chart(document.getElementById('staffChart'), {
+      type: 'bar',
+      data: {
+        labels: staffChartData.labels,
+        datasets: [{
+          label: 'Achievement %',
+          data: staffChartData.data,
+          backgroundColor: staffChartData.colors,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, grid: { color: '#f0f0f0' }, ticks: { font: { family: 'DM Sans', size: 11 } } },
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 } } }
+        }
+      }
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('kpiSearch');
+    if (searchInput) searchInput.addEventListener('input', e => filterKpiTable(e.target.value));
+
+    const staffSearch = document.getElementById('staffSearch');
+    if (staffSearch) staffSearch.addEventListener('input', e => filterStaffList(e.target.value));
+
+    const statusFilter = document.getElementById('kpiStatusFilter');
+    if (statusFilter) statusFilter.addEventListener('change', () => filterKpiTable(document.getElementById('kpiSearch')?.value || ''));
+
+    const categoryFilter = document.getElementById('kpiCategoryFilter');
+    if (categoryFilter) categoryFilter.addEventListener('change', () => filterKpiTable(document.getElementById('kpiSearch')?.value || ''));
+
+    // Reset modal state when opening for New KPI via button
+    document.querySelector('[data-bs-target="#kpiModal"]')?.addEventListener('click', () => {
+      window._editingRow = null;
+      document.getElementById('kpiModalTitle').textContent = 'New KPI';
+      document.getElementById('kpiSaveBtn').innerHTML = '<i class="bi bi-plus-lg"></i> Create KPI';
+      document.getElementById('kpiEditRow').value = '';
+      ['kpiTitle','kpiDesc','kpiDepartment','kpiTarget','kpiStartDate','kpiDeadline'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+      document.getElementById('kpiStaff').value = '';
+    });
+
+    updateVerifyPendingCount(); // Ensure values initialize from global variable correctly on mount
+    renderNotifications();
+
+    // Achievement bar chart
+    achievementChart = new Chart(document.getElementById('achievementChart'), {
+      type: 'bar',
+      data: {
+        labels: achievementData.month.labels,
+        datasets: [
+          { label:'Achieved',    data: achievementData.month.achieved,   backgroundColor:'#1db87a', borderRadius:6 },
+          { label:'In Progress', data: achievementData.month.inProgress, backgroundColor:'#e8a020', borderRadius:6 },
+          { label:'Overdue',     data: achievementData.month.overdue,    backgroundColor:'#e53e3e', borderRadius:6 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{ family:'DM Sans', size:11 }, boxWidth:10, padding:12 } } }, scales:{ x:{ grid:{ display:false }, ticks:{ font:{ family:'DM Sans', size:11 } } }, y:{ grid:{ color:'#f0f0f0' }, ticks:{ font:{ family:'DM Sans', size:11 } } } } }
+    });
+
+    // Category doughnut
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Research','Teaching','Service','Admin'],
+        datasets: [{ data:[10,8,4,2], backgroundColor:['#1a3a5c','#1db87a','#e8a020','#6b7a99'], borderWidth:0 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ font:{ family:'DM Sans', size:11 }, boxWidth:10, padding:10 } } } }
+    });
+
+    // Staff performance vertical bar chart
+    buildStaffChart();
+  });
+</script>
+</body>
+</html>
