@@ -39,7 +39,6 @@
       position: relative;
       overflow: hidden;
     }
-    /* large pill shapes like image 2 */
     .left-panel .blob {
       position: absolute;
       border-radius: 60px;
@@ -123,7 +122,6 @@
       position: relative;
     }
 
-    /* avatar circle at the top of the card (image-2 style) */
     .avatar-wrap {
       display: flex;
       justify-content: center;
@@ -151,12 +149,11 @@
       box-shadow: 0 4px 36px rgba(26,58,92,0.10);
       position: relative;
       overflow: hidden;
-      min-height: 520px; /* consistent card height for a better transition */
+      min-height: 540px;
       display: flex;
       flex-direction: column;
     }
 
-    /* tabs */
     .auth-tabs {
       display: flex;
       border-bottom: 1.5px solid var(--border);
@@ -188,6 +185,13 @@
       text-transform: uppercase;
       letter-spacing: 0.4px;
     }
+    
+    /* Input Wrapper & Click Sensitivity Fixes */
+    .input-icon-wrap {
+      position: relative;
+      width: 100%;
+    }
+    
     .form-control, .form-select {
       border: none;
       border-bottom: 1.5px solid var(--border);
@@ -199,32 +203,51 @@
       background: transparent;
       transition: border-color 0.2s;
     }
+
+    .input-icon-wrap .form-control {
+      padding-left: 28px;
+      padding-right: 40px; 
+      position: relative;
+      z-index: 2; /* Ensures the input always captures your mouse clicks */
+    }
+
     .form-control:focus, .form-select:focus {
       border-bottom-color: var(--primary);
       box-shadow: none;
       outline: none;
       background: transparent;
     }
-    .input-icon-wrap {
-      position: relative;
-    }
-    .input-icon-wrap .bi {
+    
+    /* Left Icons (Lock, Envelope) */
+    .input-icon-wrap i.bi:not(.input-eye) {
       position: absolute;
-      left: 0; top: 50%;
+      left: 0; 
+      top: 50%;
       transform: translateY(-50%);
       color: var(--muted);
       font-size: 15px;
+      z-index: 3;
+      pointer-events: none; /* Forces all clicks to pass straight through to the input */
     }
-    .input-icon-wrap .form-control {
-      padding-left: 24px;
-    }
+
+    /* Right Icon (Eye toggle) */
     .input-eye {
       position: absolute;
-      right: 0; top: 50%;
+      right: 0; 
+      top: 50%;
       transform: translateY(-50%);
       color: var(--muted);
       cursor: pointer;
-      font-size: 15px;
+      font-size: 16px;
+      padding: 5px; /* Gives the eye a slightly larger clickable target area */
+      margin-right: -5px; /* Adjusts alignment to account for the padding */
+      z-index: 4; /* Keeps the eye clickable above the input */
+    }
+
+    /* FIX: Hide the default browser (Edge/IE) password reveal eye icon */
+    input[type="password"]::-ms-reveal,
+    input[type="password"]::-ms-clear {
+      display: none;
     }
 
     .btn-primary-custom {
@@ -243,6 +266,27 @@
     }
     .btn-primary-custom:hover { background: #122b46; }
     .btn-primary-custom:active { transform: scale(0.98); }
+
+    /* Role selection buttons */
+    .role-btn {
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+      border-radius: 8px;
+      padding: 8px;
+      transition: all 0.2s;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .btn-check:checked + .role-btn {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--primary);
+    }
+    .role-btn:hover:not(.active) {
+      background: var(--bg);
+    }
 
     .forgot-link {
       font-size: 13px;
@@ -271,12 +315,10 @@
         animation: fadeIn 0.3s ease-in-out;
     }
 
-    /* register form scroll */
     #registerSection { max-height: 440px; overflow-y: auto; padding-right: 4px; }
     #registerSection::-webkit-scrollbar { width: 4px; }
     #registerSection::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* reset password sections should also grow to match card height */
     #forgotPassSection, #verifyCodeOnlySection, #resetPasswordSection, #resetSuccessSection {
         flex-grow: 1;
         display: none;
@@ -350,7 +392,21 @@
         </div>
 
         <button class="btn-primary-custom mb-3" onclick="doLogin()">Log In</button>
-      </div><div class="form-section" id="registerSection">
+
+        <div class="text-center mt-1 mb-4">
+          <label class="form-label d-block mb-2" style="font-size: 11px;">Select Role</label>
+          <div class="d-flex gap-2">
+            <input type="radio" class="btn-check" name="loginRole" id="roleManager" value="manager" checked onchange="window.loginSelectedRole='manager'">
+            <label class="btn flex-grow-1 role-btn" for="roleManager">Manager</label>
+
+            <input type="radio" class="btn-check" name="loginRole" id="roleStaff" value="staff" onchange="window.loginSelectedRole='staff'">
+            <label class="btn flex-grow-1 role-btn" for="roleStaff">Staff</label>
+          </div>
+        </div>
+
+      </div>
+      
+      <div class="form-section" id="registerSection">
         <div class="alert alert-success alert-custom" id="regSuccess">
           <i class="bi bi-check-circle me-2"></i>Account created! Please sign in.
         </div>
@@ -403,7 +459,9 @@
         <button class="btn-primary-custom mb-4" onclick="doRegister()">
           <i class="bi bi-person-plus me-2"></i>Create Account
         </button>
-      </div><div class="form-section" id="forgotPassSection">
+      </div>
+      
+      <div class="form-section" id="forgotPassSection">
         <a href="#" class="forgot-link mb-3 d-inline-block" onclick="switchTab('login')">
           <i class="bi bi-arrow-left me-1"></i>Back to Login
         </a>
@@ -418,7 +476,9 @@
           </div>
         </div>
         <button class="btn-primary-custom" onclick="showVerifyCodeOnly()">Continue</button>
-      </div><div class="form-section" id="verifyCodeOnlySection">
+      </div>
+      
+      <div class="form-section" id="verifyCodeOnlySection">
         <a href="#" class="forgot-link mb-3 d-inline-block" onclick="showForgotPass()">
           <i class="bi bi-arrow-left me-1"></i>Back
         </a>
@@ -430,7 +490,9 @@
           <input type="text" class="form-control" id="verifyCodeInput" placeholder="123456"/>
         </div>
         <button class="btn-primary-custom" onclick="showResetPassword()">Verify Code</button>
-      </div><div class="form-section" id="resetPasswordSection">
+      </div>
+      
+      <div class="form-section" id="resetPasswordSection">
         <a href="#" class="forgot-link mb-3 d-inline-block" onclick="showVerifyCodeOnly()">
           <i class="bi bi-arrow-left me-1"></i>Back
         </a>
@@ -453,31 +515,35 @@
           </div>
         </div>
         <button class="btn-primary-custom" onclick="resetPasswordAndBackToLogin()">Reset Password</button>
-      </div><div class="form-section" id="resetSuccessSection">
+      </div>
+      
+      <div class="form-section" id="resetSuccessSection">
           <div class="text-center mt-5 mb-4">
               <i class="bi bi-check-circle-fill text-success" style="font-size:4rem;"></i>
           </div>
           <h5 class="form-label text-transform-none mb-3 text-center" style="font-size:16px;">Password Reset Successfully!</h5>
           <p class="forgot-link text-muted mb-4 text-center" style="text-decoration:none;">Your password has been changed. You can now use your new password to log in.</p>
           <button class="btn-primary-custom mt-auto mb-4" onclick="switchTab('login')">Return to Login</button>
-      </div></div></div>
-</div><script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script>
+  window.loginSelectedRole = 'manager';
+
   function switchTab(tab) {
-    // hide all sections and remove active from all tabs
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
     
-    // show original tabs, except for reset-related sections
     if (tab === 'login' || tab === 'register') {
         document.getElementById('authTabs').style.display = 'flex';
-        // highlight the selected tab
         document.querySelectorAll('.auth-tab').forEach((t, i) => {
           t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
         });
         document.getElementById(tab + 'Section').classList.add('active');
     } else {
-        // hide tabs for forgot password flow
         document.getElementById('authTabs').style.display = 'none';
         document.getElementById(tab + 'Section').classList.add('active');
     }
@@ -490,19 +556,22 @@
     else { inp.type = 'password'; icon.className = 'bi bi-eye input-eye'; }
   }
 
-  // --- Login & Registration Logic ---
-
   function doLogin() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPassword').value;
+    
     if (!email || !pass) {
       const err = document.getElementById('loginError');
       err.style.display = 'block';
       setTimeout(() => err.style.display = 'none', 3000);
       return;
     }
-    // Simulation: redirect as "manager" by default
-    window.location.href = 'dashboard-manager.html';
+    
+    if (window.loginSelectedRole === 'staff') {
+      window.location.href = 'dashboard-staff.html';
+    } else {
+      window.location.href = 'dashboard-manager.html';
+    }
   }
 
   function doRegister() {
@@ -514,8 +583,6 @@
     setTimeout(() => { switchTab('login'); s.style.display = 'none'; }, 1800);
   }
 
-  // --- Password Reset Flow ---
-
   function showForgotPass() {
       switchTab('forgotPass');
   }
@@ -526,7 +593,6 @@
           alert("Please enter your email."); 
           return; 
       }
-      // Switch to step 2
       switchTab('verifyCodeOnly');
   }
 
@@ -536,7 +602,6 @@
           alert("Please enter the verification code."); 
           return; 
       }
-      // Switch to step 3
       switchTab('resetPassword');
   }
 
@@ -552,8 +617,6 @@
           alert("Passwords do not match.");
           return;
       }
-      
-      // Simulation: assume password changed successfully
       switchTab('resetSuccess');
   }
 </script>

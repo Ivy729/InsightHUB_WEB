@@ -385,7 +385,7 @@
 <aside class="sidebar">
   <div class="sidebar-brand">
     <div class="brand-icon"><i class="bi bi-bar-chart-fill"></i></div>
-    <span class="brand-name">KPI Manager</span>
+    <span class="brand-name">KPI Staff</span>
   </div>
   <div class="sidebar-section">Overview</div>
   <a class="nav-item active" onclick="showPage('dashboard',this)">
@@ -404,6 +404,9 @@
   <div class="sidebar-section">Account</div>
   <a class="nav-item" onclick="showPage('profile',this)">
     <i class="bi bi-person-circle"></i> My Profile
+  </a>
+  <a class="nav-item" onclick="showPage('settings',this)">
+    <i class="bi bi-gear-fill"></i> Settings
   </a>
   <a class="nav-item" href="login.html">
     <i class="bi bi-box-arrow-left"></i> Sign Out
@@ -686,63 +689,161 @@
 
     <!-- PROFILE PAGE -->
     <div class="page-section" id="page-profile">
-      <div class="grid-2">
-        <div class="section-card">
-          <div class="section-header"><span class="section-title">Profile Information</span></div>
-          <div class="section-body">
-            <div style="text-align:center;margin-bottom:24px;">
-              <!-- Clickable profile picture upload -->
+      <!-- Single full-width card -->
+      <div class="section-card">
+        <div class="section-header"><span class="section-title">Profile Information</span></div>
+        <div class="section-body">
+          <!-- Inner layout: avatar column (left) + form fields (right) -->
+          <div style="display:flex;gap:40px;align-items:flex-start;">
+
+            <!-- LEFT: Avatar + name -->
+            <div style="display:flex;flex-direction:column;align-items:center;min-width:180px;padding-top:8px;">
               <div class="profile-pic-wrap" onclick="document.getElementById('profilePicInput').click()" title="Click to upload photo">
                 <div class="avatar-large" id="profilePicDisplay">AS</div>
                 <div class="profile-pic-overlay"><i class="bi bi-camera-fill"></i></div>
               </div>
               <input type="file" id="profilePicInput" accept="image/*" style="display:none;" onchange="handleProfilePicChange(this)"/>
-              <div style="font-weight:700;font-size:18px;" id="profileDisplayName">Ali Samsuri</div>
-              <div style="color:var(--muted);font-size:13px;">Staff · Research Department</div>
+              <div style="font-weight:700;font-size:16px;margin-top:4px;text-align:center;" id="profileDisplayName">Ali Samsuri</div>
+              <div style="color:var(--muted);font-size:12px;margin-top:2px;text-align:center;">Staff · Research Department</div>
             </div>
-            <div class="row g-3">
-              <div class="col-6">
-                <label class="form-label" style="font-size:13px;">First Name</label>
-                <input type="text" class="form-control" id="firstNameInput" value="Ali" style="font-size:14px;"/>
-              </div>
-              <div class="col-6">
-                <label class="form-label" style="font-size:13px;">Last Name</label>
-                <input type="text" class="form-control" id="lastNameInput" value="Samsuri" style="font-size:14px;"/>
-              </div>
-              <div class="col-12">
-                <label class="form-label" style="font-size:13px;">Email</label>
-                <input type="email" class="form-control" value="ali.samsuri@university.edu.my" style="font-size:14px;"/>
-              </div>
-              <div class="col-12">
-                <label class="form-label" style="font-size:13px;">Department</label>
-                <input type="text" class="form-control" value="Research Department" style="font-size:14px;"/>
-              </div>
-              <div class="col-12" style="display:flex;gap:10px;">
-                <button class="btn-primary-custom" id="saveProfileBtn" onclick="saveProfileChanges()"><i class="bi bi-check-lg"></i> Save Changes</button>
-                <button class="btn-primary-custom" style="background:var(--danger);" onclick="if(confirm('Delete your account? This cannot be undone.'))window.location.href='login.html'"><i class="bi bi-trash"></i> Delete Account</button>
+
+            <!-- RIGHT: Fields (stretch to fill remaining width) -->
+            <div style="flex:1;">
+              <div class="row g-3">
+                <div class="col-6">
+                  <label class="form-label" style="font-size:13px;">First Name</label>
+                  <input type="text" class="form-control" id="firstNameInput" value="Ali" style="font-size:14px;"/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label" style="font-size:13px;">Last Name</label>
+                  <input type="text" class="form-control" id="lastNameInput" value="Samsuri" style="font-size:14px;"/>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" style="font-size:13px;">Email</label>
+                  <input type="email" class="form-control" value="ali.samsuri@university.edu.my" style="font-size:14px;"/>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" style="font-size:13px;">Department</label>
+                  <input type="text" class="form-control" value="Research Department" style="font-size:14px;"/>
+                </div>
+                <div class="col-12" style="display:flex;gap:10px;margin-top:4px;">
+                  <button class="btn-primary-custom" id="saveProfileBtn" onclick="saveProfileChanges()"><i class="bi bi-check-lg"></i> Save Changes</button>
+                  <button class="btn-primary-custom" style="background:var(--danger);" onclick="if(confirm('Delete your account? This cannot be undone.'))window.location.href='login.html'"><i class="bi bi-trash"></i> Delete Account</button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        <div class="section-card">
-          <div class="section-header"><span class="section-title">Change Password</span></div>
-          <div class="section-body">
-            <div class="mb-3">
-              <label class="form-label" style="font-size:13px;">Current Password</label>
-              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" style="font-size:13px;">New Password</label>
-              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" style="font-size:13px;">Confirm New Password</label>
-              <input type="password" class="form-control" placeholder="••••••••" style="font-size:14px;"/>
-            </div>
-            <button class="btn-primary-custom"><i class="bi bi-shield-lock"></i> Update Password</button>
+
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page-section" id="page-settings">
+
+      <!-- System Preferences Card (full width) -->
+      <div class="section-card" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;padding:22px 28px;border-bottom:1px solid var(--border);">
+          <div style="width:42px;height:42px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-display" style="font-size:19px;color:var(--primary);"></i>
+          </div>
+          <div>
+            <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text);">System Preferences</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">Customize how the system displays information</div>
+          </div>
+        </div>
+
+        <!-- Time Format row -->
+        <div style="padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">Time Format</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;">Choose how times are displayed throughout the system</div>
+          </div>
+          <!-- Pill button switcher -->
+          <div id="timeFormatSwitcher" style="display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:white;">
+            <button id="btn12" onclick="setTimeFormat(false)"
+              style="padding:7px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:white;font-family:'DM Sans',sans-serif;border-radius:6px 0 0 6px;transition:background 0.18s,color 0.18s;">
+              12-Hour
+            </button>
+            <button id="btn24" onclick="setTimeFormat(true)"
+              style="padding:7px 22px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:background 0.18s,color 0.18s;">
+              24-Hour
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Preview row -->
+        <div style="padding:22px 28px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Live Preview</div>
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div style="display:flex;align-items:center;gap:12px;border:1.5px solid var(--border);border-radius:10px;padding:14px 24px;background:var(--bg);min-width:180px;">
+              <i class="bi bi-clock" style="font-size:22px;color:var(--text);"></i>
+              <span id="timePreview" style="font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:1px;min-width:130px;"></span>
+            </div>
+            <span style="font-size:13px;color:var(--muted);">Current system time displayed in your selected format.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Card (full width) -->
+      <div class="section-card">
+        <div style="display:flex;align-items:center;gap:14px;padding:22px 28px;border-bottom:1px solid var(--border);">
+          <div style="width:42px;height:42px;border-radius:10px;background:rgba(29,184,122,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-shield-lock-fill" style="font-size:19px;color:var(--success);"></i>
+          </div>
+          <div>
+            <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text);">Security</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">Manage your account password and security settings</div>
+          </div>
+        </div>
+
+        <!-- Password fields — 3 columns side by side to fill width -->
+        <div style="padding:22px 28px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;">
+
+            <!-- Current Password -->
+            <div>
+              <label class="form-label" style="font-size:13px;font-weight:600;color:var(--text);">Current Password</label>
+              <div style="position:relative;">
+                <input type="password" id="settingsCurrentPw" class="form-control" placeholder="Enter your current password" style="font-size:14px;padding-right:44px;"/>
+                <button type="button" onclick="togglePwVisibility('settingsCurrentPw','eyeIcon0')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+                  <i class="bi bi-eye" id="eyeIcon0" style="font-size:16px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- New Password -->
+            <div>
+              <label class="form-label" style="font-size:13px;font-weight:600;color:var(--text);">New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="settingsNewPw" class="form-control" placeholder="At least 8 characters" style="font-size:14px;padding-right:44px;" oninput="checkPwStrength(this.value)"/>
+                <button type="button" onclick="togglePwVisibility('settingsNewPw','eyeIcon1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+                  <i class="bi bi-eye" id="eyeIcon1" style="font-size:16px;"></i>
+                </button>
+              </div>
+              <div style="height:4px;border-radius:4px;background:var(--border);margin-top:8px;overflow:hidden;">
+                <div id="pwStrengthFill" style="height:100%;width:0;border-radius:4px;transition:width 0.3s,background 0.3s;"></div>
+              </div>
+              <div id="pwStrengthLabel" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div>
+              <label class="form-label" style="font-size:13px;font-weight:600;color:var(--text);">Confirm New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="settingsConfirmPw" class="form-control" placeholder="Re-enter new password" style="font-size:14px;padding-right:44px;"/>
+                <button type="button" onclick="togglePwVisibility('settingsConfirmPw','eyeIcon2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;">
+                  <i class="bi bi-eye" id="eyeIcon2" style="font-size:16px;"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn-primary-custom" onclick="updatePassword()"><i class="bi bi-shield-lock"></i> Update Password</button>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -800,7 +901,7 @@
   ];
 
   // ─── Page Navigation ──────────────────────────────────────────────────────
-  const pageTitles = { dashboard:'Dashboard', myKpis:'My KPIs', updateProgress:'Update Progress', submitEvidence:'Submit Evidence', profile:'My Profile' };
+  const pageTitles = { dashboard:'Dashboard', myKpis:'My KPIs', updateProgress:'Update Progress', submitEvidence:'Submit Evidence', profile:'My Profile', settings:'Settings' };
 
   function showPage(id, el) {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -1075,12 +1176,122 @@
     alert('Evidence submitted successfully! Awaiting manager approval.');
   }
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+  // ─── Settings: Time Format ────────────────────────────────────────────────
+  let use24Hour = false; // default: 12-Hour active (matches screenshot)
+
+  function setTimeFormat(is24) {
+    use24Hour = is24;
+    const btn12 = document.getElementById('btn12');
+    const btn24 = document.getElementById('btn24');
+    if (use24Hour) {
+      btn24.style.background = 'var(--primary)';
+      btn24.style.color = 'white';
+      btn24.style.borderRadius = '0 6px 6px 0';
+      btn12.style.background = 'transparent';
+      btn12.style.color = 'var(--muted)';
+      btn12.style.borderRadius = '6px 0 0 6px';
+    } else {
+      btn12.style.background = 'var(--primary)';
+      btn12.style.color = 'white';
+      btn12.style.borderRadius = '6px 0 0 6px';
+      btn24.style.background = 'transparent';
+      btn24.style.color = 'var(--muted)';
+      btn24.style.borderRadius = '0 6px 6px 0';
+    }
+    updateTimePreview();
+  }
+
+  function updateTimePreview() {
+    const now = new Date();
+    let timeStr;
+    if (use24Hour) {
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      timeStr = `${hh}:${mm}:${ss}`;
+    } else {
+      let h = now.getHours();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      timeStr = `${h}:${mm}:${ss} ${ampm}`;
+    }
+    const el = document.getElementById('timePreview');
+    if (el) el.textContent = timeStr;
+  }
+
+  setInterval(updateTimePreview, 1000);
+
+  // ─── Settings: Show/Hide Password ─────────────────────────────────────────
+  function togglePwVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+  }
+
+  // ─── Settings: Password Strength ──────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    const pwInput = document.getElementById('settingsNewPw');
+    if (pwInput) {
+      pwInput.addEventListener('input', function() {
+        const val = this.value;
+        const fill = document.getElementById('pwStrengthFill');
+        const lbl = document.getElementById('pwStrengthLabel');
+        let strength = 0;
+        if (val.length >= 8) strength++;
+        if (/[A-Z]/.test(val)) strength++;
+        if (/[0-9]/.test(val)) strength++;
+        if (/[^A-Za-z0-9]/.test(val)) strength++;
+        const colors = ['', '#e53e3e', '#f5a623', '#1db87a', '#1a3a5c'];
+        const labels = ['', 'Weak', 'Fair', 'Strong', 'Very Strong'];
+        fill.style.width = (strength * 25) + '%';
+        fill.style.background = colors[strength] || 'transparent';
+        lbl.textContent = val ? labels[strength] : '';
+        lbl.style.color = colors[strength] || 'var(--muted)';
+      });
+    }
+  });
+
+  // ─── Settings: Password Update ────────────────────────────────────────────
+  function updatePassword() {
+    const curr = document.getElementById('settingsCurrentPw').value;
+    const nw = document.getElementById('settingsNewPw').value;
+    const conf = document.getElementById('settingsConfirmPw').value;
+    if (!curr || !nw || !conf) { alert('Please fill in all password fields.'); return; }
+    if (nw !== conf) { alert('New passwords do not match.'); return; }
+    if (nw.length < 8) { alert('Password must be at least 8 characters.'); return; }
+    document.getElementById('settingsCurrentPw').value = '';
+    document.getElementById('settingsNewPw').value = '';
+    document.getElementById('settingsConfirmPw').value = '';
+    // Reset eye icons back to hidden
+    ['settingsCurrentPw','settingsNewPw','settingsConfirmPw'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.type = 'password';
+    });
+    ['eyeIcon0','eyeIcon1','eyeIcon2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.remove('bi-eye-slash'); el.classList.add('bi-eye'); }
+    });
+    document.getElementById('pwStrengthFill').style.width = '0';
+    document.getElementById('pwStrengthLabel').textContent = '';
+    alert('Password updated successfully!');
+  }
+
+
   window.addEventListener('DOMContentLoaded', () => {
     renderDashboardKPIs();
     renderKpiTable();
     updateSlider();
     updateNotifBadge();
+    setTimeFormat(false); // default 12-Hour active
   });
 </script>
 </body>
