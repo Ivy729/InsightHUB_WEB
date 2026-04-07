@@ -184,6 +184,7 @@
       margin-bottom: 5px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
+      transition: color 0.2s;
     }
     
     /* Input Wrapper & Click Sensitivity Fixes */
@@ -208,7 +209,7 @@
       padding-left: 28px;
       padding-right: 40px; 
       position: relative;
-      z-index: 2; /* Ensures the input always captures your mouse clicks */
+      z-index: 2;
     }
 
     .form-control:focus, .form-select:focus {
@@ -227,7 +228,7 @@
       color: var(--muted);
       font-size: 15px;
       z-index: 3;
-      pointer-events: none; /* Forces all clicks to pass straight through to the input */
+      pointer-events: none;
     }
 
     /* Right Icon (Eye toggle) */
@@ -239,12 +240,11 @@
       color: var(--muted);
       cursor: pointer;
       font-size: 16px;
-      padding: 5px; /* Gives the eye a slightly larger clickable target area */
-      margin-right: -5px; /* Adjusts alignment to account for the padding */
-      z-index: 4; /* Keeps the eye clickable above the input */
+      padding: 5px;
+      margin-right: -5px;
+      z-index: 4;
     }
 
-    /* FIX: Hide the default browser (Edge/IE) password reveal eye icon */
     input[type="password"]::-ms-reveal,
     input[type="password"]::-ms-clear {
       display: none;
@@ -267,7 +267,6 @@
     .btn-primary-custom:hover { background: #122b46; }
     .btn-primary-custom:active { transform: scale(0.98); }
 
-    /* Role selection buttons */
     .role-btn {
       border: 1.5px solid var(--border);
       color: var(--muted);
@@ -302,6 +301,23 @@
       padding: 9px 13px;
       display: none;
       margin-bottom: 16px;
+    }
+
+    /* ── Strong red error alert for registration ── */
+    #regError {
+      background: #fff0f0;
+      border: 1.5px solid var(--danger);
+      color: #b91c1c;
+      font-weight: 600;
+    }
+    #regError i { color: #b91c1c; }
+
+    /* ── Red underline on invalid fields ── */
+    .field-error {
+      border-bottom-color: var(--danger) !important;
+    }
+    .field-error-label {
+      color: var(--danger) !important;
     }
 
     .form-section { display: none; flex-grow: 1;}
@@ -351,7 +367,6 @@
 </div>
 
 <div class="right-panel">
-
   <div style="width:100%;max-width:420px;margin:0 auto;">
     <div class="avatar-wrap">
       <div class="avatar-circle">
@@ -371,10 +386,13 @@
         </div>
 
         <div class="mb-4">
-          <label class="form-label">Email Address</label>
+          <label class="form-label">Username</label>
           <div class="input-icon-wrap">
             <i class="bi bi-envelope"></i>
-            <input type="email" class="form-control" id="loginEmail" placeholder="you@example.com"/>
+            <input type="text" class="form-control" id="loginUsername" placeholder="yourname" style="padding-right: 110px;"/>
+            <span style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; padding-right: 14px;">
+              @company.com
+            </span>
           </div>
         </div>
 
@@ -403,38 +421,49 @@
             <label class="btn flex-grow-1 role-btn" for="roleStaff">Staff</label>
           </div>
         </div>
-
       </div>
       
       <div class="form-section" id="registerSection">
+
         <div class="alert alert-success alert-custom" id="regSuccess">
           <i class="bi bi-check-circle me-2"></i>Account created! Please sign in.
         </div>
+
+        <div class="alert alert-danger alert-custom" id="regError">
+          <i class="bi bi-exclamation-circle me-2"></i><span id="regErrorMsg"></span>
+        </div>
+
         <div class="row g-2 mb-3">
           <div class="col-6">
             <label class="form-label">First Name</label>
-            <input type="text" class="form-control" placeholder="John"/>
+            <input type="text" class="form-control" id="regFirstName" placeholder="John"/>
           </div>
           <div class="col-6">
             <label class="form-label">Last Name</label>
-            <input type="text" class="form-control" placeholder="Doe"/>
+            <input type="text" class="form-control" id="regLastName" placeholder="Doe"/>
           </div>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Email Address</label>
           <div class="input-icon-wrap">
             <i class="bi bi-envelope"></i>
-            <input type="email" class="form-control" placeholder="you@company.com"/>
+            <input type="email" class="form-control" id="regEmail" placeholder="you@company.com"/>
           </div>
+          <small style="font-size:11px;color:var(--muted);padding-left:28px;">
+            Must use your company email (e.g. name@company.com)
+          </small>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Role</label>
-          <select class="form-select">
+          <select class="form-select" id="regRole">
             <option value="">Select your role</option>
             <option>Manager</option>
             <option>Staff</option>
           </select>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Password</label>
           <div class="input-icon-wrap">
@@ -442,20 +471,27 @@
             <input type="password" class="form-control" id="regPassword" placeholder="Minimum 8 characters"/>
             <i class="bi bi-eye input-eye" id="toggleReg" onclick="togglePass('regPassword','toggleReg')"></i>
           </div>
+          <small id="passHint" style="font-size:11px;color:var(--muted);padding-left:28px;">
+            At least 8 characters required
+          </small>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Confirm Password</label>
           <div class="input-icon-wrap">
             <i class="bi bi-lock-fill"></i>
             <input type="password" class="form-control" id="regConfirm" placeholder="Repeat password"/>
+            <i class="bi bi-eye input-eye" id="toggleRegConfirm" onclick="togglePass('regConfirm','toggleRegConfirm')"></i>
           </div>
         </div>
+
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" id="terms"/>
           <label class="form-check-label" for="terms" style="font-size:13px;color:var(--muted);">
             I agree to the <a href="#" style="color:var(--primary);">Terms &amp; Conditions</a>
           </label>
         </div>
+
         <button class="btn-primary-custom mb-4" onclick="doRegister()">
           <i class="bi bi-person-plus me-2"></i>Create Account
         </button>
@@ -533,22 +569,24 @@
 <script>
   window.loginSelectedRole = 'manager';
 
+  /* ── Tab switching ── */
   function switchTab(tab) {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
     
     if (tab === 'login' || tab === 'register') {
-        document.getElementById('authTabs').style.display = 'flex';
-        document.querySelectorAll('.auth-tab').forEach((t, i) => {
-          t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
-        });
-        document.getElementById(tab + 'Section').classList.add('active');
+      document.getElementById('authTabs').style.display = 'flex';
+      document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+      });
+      document.getElementById(tab + 'Section').classList.add('active');
     } else {
-        document.getElementById('authTabs').style.display = 'none';
-        document.getElementById(tab + 'Section').classList.add('active');
+      document.getElementById('authTabs').style.display = 'none';
+      document.getElementById(tab + 'Section').classList.add('active');
     }
   }
 
+  /* ── Password visibility toggle ── */
   function togglePass(id, iconId) {
     const inp = document.getElementById(id);
     const icon = document.getElementById(iconId);
@@ -556,17 +594,102 @@
     else { inp.type = 'password'; icon.className = 'bi bi-eye input-eye'; }
   }
 
-  function doLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const pass = document.getElementById('loginPassword').value;
+  /* ── Clear red state as soon as the user starts typing in a field ── */
+  ['loginUsername','regFirstName','regLastName','regEmail','regRole','regPassword','regConfirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      el.classList.remove('field-error');
+      const wrapper = el.closest('.mb-3, .mb-4, .col-6');
+      if (wrapper) {
+        const lbl = wrapper.querySelector('.form-label');
+        if (lbl) lbl.classList.remove('field-error-label');
+      }
+    });
+    el.addEventListener('change', () => {
+      el.classList.remove('field-error');
+      const wrapper = el.closest('.mb-3, .mb-4, .col-6');
+      if (wrapper) {
+        const lbl = wrapper.querySelector('.form-label');
+        if (lbl) lbl.classList.remove('field-error-label');
+      }
+    });
+  });
+
+  /* ── Live password hint colour ── */
+  document.getElementById('regPassword').addEventListener('input', function () {
+    const hint = document.getElementById('passHint');
+    if (this.value.length === 0) {
+      hint.style.color = 'var(--muted)';
+      hint.textContent = 'At least 8 characters required';
+    } else if (this.value.length < 8) {
+      hint.style.color = 'var(--danger)';
+      hint.textContent = `${this.value.length}/8 characters — too short`;
+    } else {
+      hint.style.color = 'var(--success)';
+      hint.textContent = 'Password length looks good ✓';
+    }
+  });
+
+  /* ── Helper: clear all field error states in register form ── */
+  function clearRegErrors() {
+    // Hide the error banner when checking for errors again
+    document.getElementById('regError').style.display = 'none';
+
+    document.querySelectorAll('#registerSection .form-control, #registerSection .form-select').forEach(el => {
+      el.classList.remove('field-error');
+    });
+    document.querySelectorAll('#registerSection .form-label').forEach(el => {
+      el.classList.remove('field-error-label');
+    });
+  }
+
+  /* ── Helper: mark a field as invalid (red underline + label) ── */
+  function markFieldError(fieldEl) {
+    fieldEl.classList.add('field-error');
+    const wrapper = fieldEl.closest('.mb-3, .mb-4, .col-6');
+    if (wrapper) {
+      const lbl = wrapper.querySelector('.form-label');
+      if (lbl) lbl.classList.add('field-error-label');
+    }
+  }
+
+  /* ── Helper: show registration error and scroll to it ── */
+  function showRegError(msg, fieldEl) {
+    const errEl = document.getElementById('regError');
+    document.getElementById('regErrorMsg').textContent = msg;
+    errEl.style.display = 'block';
     
-    if (!email || !pass) {
+    /* Scroll the registerSection container to the top so the alert is visible */
+    const section = document.getElementById('registerSection');
+    section.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    if (fieldEl) markFieldError(fieldEl);
+    
+    // NOTE: Timeout has been removed so the error stays until fixed or re-submitted
+  }
+
+  /* ── Login ── */
+  function doLogin() {
+    // 1. Grab the username instead of the full email
+    const username = document.getElementById('loginUsername').value.trim();
+    const pass  = document.getElementById('loginPassword').value;
+    
+    // 2. Check for empty fields
+    if (!username || !pass) {
       const err = document.getElementById('loginError');
       err.style.display = 'block';
       setTimeout(() => err.style.display = 'none', 3000);
       return;
     }
+
+    // 3. Automatically build the full email to send to your database
+    const fullEmailToDatabase = username + "@company.com";
     
+    // (Optional) You can console.log this to see it working in your browser's developer tools!
+    console.log("Logging in with: ", fullEmailToDatabase); 
+    
+    // 4. Proceed with redirect logic
     if (window.loginSelectedRole === 'staff') {
       window.location.href = 'dashboard-staff.html';
     } else {
@@ -574,50 +697,102 @@
     }
   }
 
+  /* ── Register ── */
   function doRegister() {
-    const pass = document.getElementById('regPassword').value;
-    const confirm = document.getElementById('regConfirm').value;
-    if (pass !== confirm) { alert('Passwords do not match!'); return; }
+    clearRegErrors();
+
+    const firstName = document.getElementById('regFirstName');
+    const lastName  = document.getElementById('regLastName');
+    const emailEl   = document.getElementById('regEmail');
+    const roleEl    = document.getElementById('regRole');
+    const passEl    = document.getElementById('regPassword');
+    const confirmEl = document.getElementById('regConfirm');
+    const termsEl   = document.getElementById('terms');
+
+    /* ── 1. Empty field check — collect all empty fields ── */
+    const emptyFields = [];
+    if (!firstName.value.trim()) emptyFields.push(firstName);
+    if (!lastName.value.trim())  emptyFields.push(lastName);
+    if (!emailEl.value.trim())   emptyFields.push(emailEl);
+    if (!roleEl.value)           emptyFields.push(roleEl);
+    if (!passEl.value)           emptyFields.push(passEl);
+    if (!confirmEl.value)        emptyFields.push(confirmEl);
+
+    if (emptyFields.length > 0) {
+      emptyFields.forEach(f => markFieldError(f));
+      showRegError('Please fill in all fields before continuing.', null);
+      return;
+    }
+
+    /* ── 2. Email format check ── */
+    if (!emailEl.value.trim().toLowerCase().endsWith('@company.com')) {
+      showRegError('Email must be a company address ending with @company.com', emailEl);
+      return;
+    }
+
+    /* ── 3. Terms checkbox ── */
+    if (!termsEl.checked) {
+      showRegError('Please agree to the Terms & Conditions to continue.', null);
+      return;
+    }
+
+    /* ── 4. Password length ── */
+    if (passEl.value.length < 8) {
+      showRegError('Password must be at least 8 characters long.', passEl);
+      return;
+    }
+
+    /* ── 5. Password match ── */
+    if (passEl.value !== confirmEl.value) {
+      // Highlight BOTH fields if they don't match
+      markFieldError(passEl);
+      showRegError('Passwords do not match. Please try again.', confirmEl);
+      return;
+    }
+
+    /* All checks passed → explicitly hide error, show success, and scroll up */
+    document.getElementById('regError').style.display = 'none';
+    
     const s = document.getElementById('regSuccess');
     s.style.display = 'block';
+    
+    // Auto-scroll up to display the success banner
+    const section = document.getElementById('registerSection');
+    section.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Switch to login tab after brief delay
     setTimeout(() => { switchTab('login'); s.style.display = 'none'; }, 1800);
   }
 
+  /* ── Forgot password flow ── */
   function showForgotPass() {
-      switchTab('forgotPass');
+    switchTab('forgotPass');
   }
 
   function showVerifyCodeOnly() {
-      const email = document.getElementById('forgotEmail').value;
-      if (!email && document.getElementById('forgotPassSection').classList.contains('active')) { 
-          alert("Please enter your email."); 
-          return; 
-      }
-      switchTab('verifyCodeOnly');
+    const email = document.getElementById('forgotEmail').value;
+    if (!email && document.getElementById('forgotPassSection').classList.contains('active')) {
+      alert('Please enter your email.');
+      return;
+    }
+    switchTab('verifyCodeOnly');
   }
 
   function showResetPassword() {
-      const code = document.getElementById('verifyCodeInput').value;
-      if (!code) { 
-          alert("Please enter the verification code."); 
-          return; 
-      }
-      switchTab('resetPassword');
+    const code = document.getElementById('verifyCodeInput').value;
+    if (!code) {
+      alert('Please enter the verification code.');
+      return;
+    }
+    switchTab('resetPassword');
   }
 
   function resetPasswordAndBackToLogin() {
-      const newPass = document.getElementById('newPass').value;
-      const confirmPass = document.getElementById('confirmNewPass').value;
-      
-      if (newPass.length < 8) { 
-          alert("Password must be at least 8 characters."); 
-          return;
-      }
-      if (newPass !== confirmPass) {
-          alert("Passwords do not match.");
-          return;
-      }
-      switchTab('resetSuccess');
+    const newPass     = document.getElementById('newPass').value;
+    const confirmPass = document.getElementById('confirmNewPass').value;
+    if (newPass.length < 8) { alert('Password must be at least 8 characters.'); return; }
+    if (newPass !== confirmPass) { alert('Passwords do not match.'); return; }
+    switchTab('resetSuccess');
   }
 </script>
 </body>
