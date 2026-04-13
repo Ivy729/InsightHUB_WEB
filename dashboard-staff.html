@@ -621,20 +621,20 @@
           <div class="section-body">
             <div class="mb-3">
               <label class="form-label fw-semibold" style="font-size:13px;">KPI</label>
-              <select class="form-select" style="font-size:14px;">
-                <option>Research Publications</option>
-                <option>Student Pass Rate</option>
-                <option>Community Service</option>
+              <select id="evidenceKpiSelect" class="form-select" style="font-size:14px;">
+                <option value="Research Publications">Research Publications</option>
+                <option value="Student Pass Rate">Student Pass Rate</option>
+                <option value="Community Service">Community Service</option>
               </select>
             </div>
             <div class="mb-3">
               <label class="form-label fw-semibold" style="font-size:13px;">Evidence Type</label>
-              <select class="form-select" style="font-size:14px;">
-                <option>Document (PDF/Word)</option>
-                <option>Image</option>
-                <option>Certificate</option>
-                <option>Letter</option>
-                <option>Screenshot</option>
+              <select id="evidenceTypeSelect" class="form-select" style="font-size:14px;">
+                <option value="Document">Document (PDF/Word)</option>
+                <option value="Image">Image</option>
+                <option value="Certificate">Certificate</option>
+                <option value="Letter">Letter</option>
+                <option value="Screenshot">Screenshot</option>
               </select>
             </div>
             <div class="mb-3">
@@ -656,7 +656,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label fw-semibold" style="font-size:13px;">Description / Notes</label>
-              <textarea class="form-control" rows="3" placeholder="Describe this evidence briefly..." style="font-size:14px;"></textarea>
+              <textarea id="evidenceDesc" class="form-control" rows="3" placeholder="Describe this evidence briefly..." style="font-size:14px;"></textarea>
             </div>
             <button class="btn-primary-custom" onclick="submitEvidence()"><i class="bi bi-upload"></i> Submit Evidence</button>
           </div>
@@ -1063,8 +1063,10 @@
     // Re-render dashboard and table
     renderDashboardKPIs();
     renderKpiTable(document.getElementById('kpiStatusFilter').value);
+  alert('Progress updated successfully!');
 
-    alert('Progress updated successfully!');
+  // After saving progress, navigate back to the My KPIs page
+  showPage('myKpis', document.querySelector('.nav-item[onclick*=myKpis]'));
   }
 
   // ─── Notifications ────────────────────────────────────────────────────────
@@ -1150,15 +1152,24 @@
   }
 
   // ─── Evidence helpers ─────────────────────────────────────────────────────
+  let pendingEvidenceFile = null;
+
   function handleDrop(e) {
     e.preventDefault();
     document.getElementById('dropzone').style.borderColor = 'var(--border)';
     const file = e.dataTransfer.files[0];
-    if (file) showFileName(file.name);
+    if (file) {
+      pendingEvidenceFile = file;
+      showFileName(file.name);
+    }
   }
 
   function showFile(input) {
-    if (input.files[0]) showFileName(input.files[0].name);
+    const file = input.files[0];
+    if (file) {
+      pendingEvidenceFile = file;
+      showFileName(file.name);
+    }
   }
 
   function showFileName(name) {
@@ -1168,11 +1179,48 @@
   }
 
   function submitEvidence() {
+    const kpi = document.getElementById('evidenceKpiSelect')?.value || '';
+    const type = document.getElementById('evidenceTypeSelect')?.value || '';
+    const desc = document.getElementById('evidenceDesc')?.value.trim() || '';
+    const file = pendingEvidenceFile;
+
+    // Basic validation
+    if (!kpi) { alert('Please select a KPI.'); return; }
+    if (!file) { alert('Please attach a file before submitting.'); return; }
+
+    // File size check (10 MB)
+    const maxBytes = 10 * 1024 * 1024;
+    if (file.size > maxBytes) { alert('File too large. Maximum size is 10MB.'); return; }
+
+    // Create table row
     const tbody = document.querySelector('#evidenceTable tbody');
     const tr = document.createElement('tr');
     const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    tr.innerHTML = `<td><strong>New KPI</strong></td><td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi bi-file-earmark-fill"></i> evidence.pdf</a></td><td style="font-size:13px;color:var(--muted);">${today}</td><td><span class="badge-status submitted">Pending</span></td>`;
+    // Use icon based on file type
+    const fileNameEsc = file.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let fileIcon = 'bi-file-earmark-fill';
+    if (/\.pdf$/i.test(file.name)) fileIcon = 'bi-file-pdf-fill';
+    else if (/\.(png|jpe?g|gif|bmp|webp)$/i.test(file.name)) fileIcon = 'bi-file-image';
+
+    tr.innerHTML = `
+      <td><strong>${kpi}</strong></td>
+      <td><a href="#" style="color:var(--primary);font-size:13px;"><i class="bi ${fileIcon}"></i> ${fileNameEsc}</a></td>
+      <td style="font-size:13px;color:var(--muted);">${today}</td>
+      <td><span class="badge-status submitted">Pending</span></td>`;
+
     tbody.prepend(tr);
+
+    // Optionally, append to dashboard/myKpis data structures here (if used elsewhere)
+
+    // Clear form
+    pendingEvidenceFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('evidenceDesc').value = '';
+    document.getElementById('evidenceTypeSelect').value = 'Document';
+    document.getElementById('evidenceKpiSelect').selectedIndex = 0;
+
     alert('Evidence submitted successfully! Awaiting manager approval.');
   }
 
