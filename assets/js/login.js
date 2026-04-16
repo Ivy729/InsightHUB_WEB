@@ -1,209 +1,305 @@
-window.loginSelectedRole = 'manager';
+window.loginSelectedRole = "manager";
 
-/* ── Tab switching ── */
-function switchTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
-  
-  if (tab === 'login' || tab === 'register') {
-    document.getElementById('authTabs').style.display = 'flex';
-    document.querySelectorAll('.auth-tab').forEach((t, i) => {
-      t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
-    });
-    document.getElementById(tab + 'Section').classList.add('active');
+function switchTab(tabName) {
+  const tabs = document.querySelectorAll(".auth-tab");
+  const sections = document.querySelectorAll(".form-section");
+  const authTabs = document.getElementById("authTabs");
+
+  tabs.forEach((tab) => tab.classList.remove("active"));
+  sections.forEach((section) => section.classList.remove("active"));
+
+  if (tabName === "login" || tabName === "register") {
+    authTabs.style.display = "flex";
+
+    if (tabName === "login") {
+      tabs[0].classList.add("active");
+    } else {
+      tabs[1].classList.add("active");
+    }
   } else {
-    document.getElementById('authTabs').style.display = 'none';
-    document.getElementById(tab + 'Section').classList.add('active');
+    authTabs.style.display = "none";
+  }
+
+  const activeSection = document.getElementById(tabName + "Section");
+  if (activeSection) {
+    activeSection.classList.add("active");
   }
 }
 
-/* ── Password visibility toggle ── */
-function togglePass(id, iconId) {
-  const inp = document.getElementById(id);
+function togglePass(inputId, iconId) {
+  const input = document.getElementById(inputId);
   const icon = document.getElementById(iconId);
-  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash input-eye'; }
-  else { inp.type = 'password'; icon.className = 'bi bi-eye input-eye'; }
-}
 
-/* ── Clear red state as soon as the user starts typing in a field ── */
-['loginUsername','regFirstName','regLastName','regEmail','regRole','regPassword','regConfirm'].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('input', () => {
-    el.classList.remove('field-error');
-    const wrapper = el.closest('.mb-3, .mb-4, .col-6');
-    if (wrapper) {
-      const lbl = wrapper.querySelector('.form-label');
-      if (lbl) lbl.classList.remove('field-error-label');
-    }
-  });
-  el.addEventListener('change', () => {
-    el.classList.remove('field-error');
-    const wrapper = el.closest('.mb-3, .mb-4, .col-6');
-    if (wrapper) {
-      const lbl = wrapper.querySelector('.form-label');
-      if (lbl) lbl.classList.remove('field-error-label');
-    }
-  });
-});
+  if (!input || !icon) return;
 
-/* ── Live password hint colour ── */
-document.getElementById('regPassword').addEventListener('input', function () {
-  const hint = document.getElementById('passHint');
-  if (this.value.length === 0) {
-    hint.style.color = 'var(--muted)';
-    hint.textContent = 'At least 8 characters required';
-  } else if (this.value.length < 8) {
-    hint.style.color = 'var(--danger)';
-    hint.textContent = `${this.value.length}/8 characters — too short`;
+  if (input.type === "password") {
+    input.type = "text";
+    icon.className = "bi bi-eye-slash input-eye";
   } else {
-    hint.style.color = 'var(--success)';
-    hint.textContent = 'Password length looks good ✓';
-  }
-});
-
-/* ── Helper: clear all field error states in register form ── */
-function clearRegErrors() {
-  document.getElementById('regError').style.display = 'none';
-
-  document.querySelectorAll('#registerSection .form-control, #registerSection .form-select').forEach(el => {
-    el.classList.remove('field-error');
-  });
-  document.querySelectorAll('#registerSection .form-label').forEach(el => {
-    el.classList.remove('field-error-label');
-  });
-}
-
-/* ── Helper: mark a field as invalid (red underline + label) ── */
-function markFieldError(fieldEl) {
-  fieldEl.classList.add('field-error');
-  const wrapper = fieldEl.closest('.mb-3, .mb-4, .col-6');
-  if (wrapper) {
-    const lbl = wrapper.querySelector('.form-label');
-    if (lbl) lbl.classList.add('field-error-label');
+    input.type = "password";
+    icon.className = "bi bi-eye input-eye";
   }
 }
 
-/* ── Helper: show registration error and scroll to it ── */
-function showRegError(msg, fieldEl) {
-  const errEl = document.getElementById('regError');
-  document.getElementById('regErrorMsg').textContent = msg;
-  errEl.style.display = 'block';
-  
-  const section = document.getElementById('registerSection');
-  section.scrollTo({ top: 0, behavior: 'smooth' });
-  
-  if (fieldEl) markFieldError(fieldEl);
+function clearFieldError(field) {
+  if (!field) return;
+
+  field.classList.remove("field-error");
+
+  const wrapper = field.closest(".mb-3, .mb-4, .col-6");
+  if (!wrapper) return;
+
+  const label = wrapper.querySelector(".form-label");
+  if (label) {
+    label.classList.remove("field-error-label");
+  }
 }
 
-/* ── Login ── */
+function markFieldError(field) {
+  if (!field) return;
+
+  field.classList.add("field-error");
+
+  const wrapper = field.closest(".mb-3, .mb-4, .col-6");
+  if (!wrapper) return;
+
+  const label = wrapper.querySelector(".form-label");
+  if (label) {
+    label.classList.add("field-error-label");
+  }
+}
+
+function setupFieldReset(fieldIds) {
+  fieldIds.forEach((id) => {
+    const field = document.getElementById(id);
+    if (!field) return;
+
+    field.addEventListener("input", function () {
+      clearFieldError(field);
+    });
+
+    field.addEventListener("change", function () {
+      clearFieldError(field);
+    });
+  });
+}
+
+function clearRegisterErrors() {
+  const errorBox = document.getElementById("regError");
+  if (errorBox) {
+    errorBox.style.display = "none";
+  }
+
+  const fields = document.querySelectorAll(
+    "#registerSection .form-control, #registerSection .form-select"
+  );
+  fields.forEach((field) => field.classList.remove("field-error"));
+
+  const labels = document.querySelectorAll("#registerSection .form-label");
+  labels.forEach((label) => label.classList.remove("field-error-label"));
+}
+
+function showRegisterError(message, field) {
+  const errorBox = document.getElementById("regError");
+  const errorText = document.getElementById("regErrorMsg");
+  const registerSection = document.getElementById("registerSection");
+
+  if (errorText) {
+    errorText.textContent = message;
+  }
+
+  if (errorBox) {
+    errorBox.style.display = "block";
+  }
+
+  if (field) {
+    markFieldError(field);
+  }
+
+  if (registerSection) {
+    registerSection.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+}
+
+function updatePasswordHint() {
+  const passwordInput = document.getElementById("regPassword");
+  const hint = document.getElementById("passHint");
+
+  if (!passwordInput || !hint) return;
+
+  const length = passwordInput.value.length;
+
+  if (length === 0) {
+    hint.style.color = "var(--muted)";
+    hint.textContent = "At least 8 characters required";
+  } else if (length < 8) {
+    hint.style.color = "var(--danger)";
+    hint.textContent = `${length}/8 characters - too short`;
+  } else {
+    hint.style.color = "var(--success)";
+    hint.textContent = "Password length looks good";
+  }
+}
+
 function doLogin() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const pass  = document.getElementById('loginPassword').value;
-  
-  if (!username || !pass) {
-    const err = document.getElementById('loginError');
-    err.style.display = 'block';
-    setTimeout(() => err.style.display = 'none', 3000);
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errorBox = document.getElementById("loginError");
+
+  if (!username || !password) {
+    if (errorBox) {
+      errorBox.style.display = "block";
+      setTimeout(() => {
+        errorBox.style.display = "none";
+      }, 3000);
+    }
     return;
   }
 
-  const fullEmailToDatabase = username + "@company.com";
-  
-  console.log("Logging in with: ", fullEmailToDatabase); 
-  
-  if (window.loginSelectedRole === 'staff') {
-    window.location.href = 'dashboard-staff.html';
+  const fullEmail = username + "@company.com";
+  console.log("Login attempt:", fullEmail);
+
+  if (window.loginSelectedRole === "staff") {
+    window.location.href = "dashboard-staff.html";
   } else {
-    window.location.href = 'dashboard-manager.html';
+    window.location.href = "dashboard-manager.html";
   }
 }
 
-/* ── Register ── */
 function doRegister() {
-  clearRegErrors();
+  clearRegisterErrors();
 
-  const firstName = document.getElementById('regFirstName');
-  const lastName  = document.getElementById('regLastName');
-  const emailEl   = document.getElementById('regEmail');
-  const roleEl    = document.getElementById('regRole');
-  const passEl    = document.getElementById('regPassword');
-  const confirmEl = document.getElementById('regConfirm');
-  const termsEl   = document.getElementById('terms');
+  const firstName = document.getElementById("regFirstName");
+  const lastName = document.getElementById("regLastName");
+  const email = document.getElementById("regEmail");
+  const role = document.getElementById("regRole");
+  const password = document.getElementById("regPassword");
+  const confirmPassword = document.getElementById("regConfirm");
+  const terms = document.getElementById("terms");
 
-  const emptyFields = [];
-  if (!firstName.value.trim()) emptyFields.push(firstName);
-  if (!lastName.value.trim())  emptyFields.push(lastName);
-  if (!emailEl.value.trim())   emptyFields.push(emailEl);
-  if (!roleEl.value)           emptyFields.push(roleEl);
-  if (!passEl.value)           emptyFields.push(passEl);
-  if (!confirmEl.value)        emptyFields.push(confirmEl);
+  const requiredFields = [firstName, lastName, email, role, password, confirmPassword];
+  let hasEmptyField = false;
 
-  if (emptyFields.length > 0) {
-    emptyFields.forEach(f => markFieldError(f));
-    showRegError('Please fill in all fields before continuing.', null);
+  requiredFields.forEach((field) => {
+    if (!field.value.trim()) {
+      markFieldError(field);
+      hasEmptyField = true;
+    }
+  });
+
+  if (hasEmptyField) {
+    showRegisterError("Please fill in all fields before continuing.");
     return;
   }
 
-  if (!emailEl.value.trim().toLowerCase().endsWith('@company.com')) {
-    showRegError('Email must be a company address ending with @company.com', emailEl);
+  if (!email.value.trim().toLowerCase().endsWith("@company.com")) {
+    showRegisterError("Email must end with @company.com", email);
     return;
   }
 
-  if (!termsEl.checked) {
-    showRegError('Please agree to the Terms & Conditions to continue.', null);
+  if (!terms.checked) {
+    showRegisterError("Please agree to the Terms & Conditions.");
     return;
   }
 
-  if (passEl.value.length < 8) {
-    showRegError('Password must be at least 8 characters long.', passEl);
+  if (password.value.length < 8) {
+    showRegisterError("Password must be at least 8 characters long.", password);
     return;
   }
 
-  if (passEl.value !== confirmEl.value) {
-    markFieldError(passEl);
-    showRegError('Passwords do not match. Please try again.', confirmEl);
+  if (password.value !== confirmPassword.value) {
+    markFieldError(password);
+    markFieldError(confirmPassword);
+    showRegisterError("Passwords do not match.", confirmPassword);
     return;
   }
 
-  document.getElementById('regError').style.display = 'none';
-  
-  const s = document.getElementById('regSuccess');
-  s.style.display = 'block';
-  
-  const section = document.getElementById('registerSection');
-  section.scrollTo({ top: 0, behavior: 'smooth' });
+  const successBox = document.getElementById("regSuccess");
+  const registerSection = document.getElementById("registerSection");
+  const errorBox = document.getElementById("regError");
 
-  setTimeout(() => { switchTab('login'); s.style.display = 'none'; }, 1800);
+  if (errorBox) {
+    errorBox.style.display = "none";
+  }
+
+  if (successBox) {
+    successBox.style.display = "block";
+  }
+
+  if (registerSection) {
+    registerSection.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+
+  setTimeout(() => {
+    if (successBox) {
+      successBox.style.display = "none";
+    }
+    switchTab("login");
+  }, 1800);
 }
 
-/* ── Forgot password flow ── */
 function showForgotPass() {
-  switchTab('forgotPass');
+  switchTab("forgotPass");
 }
 
 function showVerifyCodeOnly() {
-  const email = document.getElementById('forgotEmail').value;
-  if (!email && document.getElementById('forgotPassSection').classList.contains('active')) {
-    alert('Please enter your email.');
+  const email = document.getElementById("forgotEmail").value.trim();
+
+  if (!email) {
+    alert("Please enter your email.");
     return;
   }
-  switchTab('verifyCodeOnly');
+
+  switchTab("verifyCodeOnly");
 }
 
 function showResetPassword() {
-  const code = document.getElementById('verifyCodeInput').value;
+  const code = document.getElementById("verifyCodeInput").value.trim();
+
   if (!code) {
-    alert('Please enter the verification code.');
+    alert("Please enter the verification code.");
     return;
   }
-  switchTab('resetPassword');
+
+  switchTab("resetPassword");
 }
 
 function resetPasswordAndBackToLogin() {
-  const newPass     = document.getElementById('newPass').value;
-  const confirmPass = document.getElementById('confirmNewPass').value;
-  if (newPass.length < 8) { alert('Password must be at least 8 characters.'); return; }
-  if (newPass !== confirmPass) { alert('Passwords do not match.'); return; }
-  switchTab('resetSuccess');
+  const newPass = document.getElementById("newPass").value;
+  const confirmNewPass = document.getElementById("confirmNewPass").value;
+
+  if (newPass.length < 8) {
+    alert("Password must be at least 8 characters.");
+    return;
+  }
+
+  if (newPass !== confirmNewPass) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  switchTab("resetSuccess");
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  setupFieldReset([
+    "loginUsername",
+    "regFirstName",
+    "regLastName",
+    "regEmail",
+    "regRole",
+    "regPassword",
+    "regConfirm"
+  ]);
+
+  const regPassword = document.getElementById("regPassword");
+  if (regPassword) {
+    regPassword.addEventListener("input", updatePasswordHint);
+  }
+});
