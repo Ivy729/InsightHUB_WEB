@@ -154,7 +154,6 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-wrapper">
-        {/* LEFT SECTION */}
         <div className="login-left">
           <div style={{ paddingBottom: '40px' }}>
             <div style={{ fontSize: '48px', fontWeight: '700', color: 'white', marginBottom: '8px', fontFamily: "'Fraunces', serif" }}>
@@ -189,10 +188,8 @@ const Login = () => {
           </div>
         </div>
 
-        {/* RIGHT SECTION */}
         <div className="login-right">
           <div className="login-card">
-            {/* TABS */}
             {(activeTab === 'login' || activeTab === 'register') && (
               <div id="authTabs" className="auth-tabs">
                 <button
@@ -210,7 +207,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* LOGIN SECTION */}
             {activeTab === 'login' && (
               <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
@@ -329,7 +325,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* REGISTER SECTION */}
             {activeTab === 'register' && (
               <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
@@ -486,7 +481,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* FORGOT PASSWORD SECTION */}
             {activeTab === 'forgotPass' && (
               <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
@@ -544,7 +538,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* VERIFY CODE SECTION */}
             {activeTab === 'verifyCodeOnly' && (
               <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
@@ -602,7 +595,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* RESET PASSWORD SECTION */}
             {activeTab === 'resetPassword' && (
               <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
@@ -654,7 +646,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* RESET SUCCESS SECTION */}
             {activeTab === 'resetSuccess' && (
               <div className="form-section active" style={{ textAlign: 'center', paddingTop: '40px', paddingBottom: '40px' }}>
                 <div style={{ fontSize: '56px', color: '#1db87a', marginBottom: '16px' }}>
