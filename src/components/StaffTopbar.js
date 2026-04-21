@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const StaffTopbar = ({ pageTitle }) => {
   const [showNotif, setShowNotif] = useState(false);
+  const [expandedNotifId, setExpandedNotifId] = useState(null);
+  const notifWrapRef = useRef(null);
   const [notifItems, setNotifItems] = useState([
     { id: 1, type: 'success', icon: 'bi-check-lg', text: 'Evidence Approved', sub: 'Research Publications · 2h ago', unread: true },
     { id: 2, type: 'danger', icon: 'bi-exclamation-triangle', text: 'KPI Overdue', sub: 'Community Service · Due Mar 2025', unread: true },
@@ -19,6 +21,17 @@ const StaffTopbar = ({ pageTitle }) => {
 
   const hasUnread = notifItems.some(n => n.unread);
 
+  const toggleNotif = () => {
+    setShowNotif(!showNotif);
+    if (showNotif) {
+      setExpandedNotifId(null);
+    }
+  };
+
+  const toggleExpandedNotif = (id) => {
+    setExpandedNotifId(prev => (prev === id ? null : id));
+  };
+
   const getColorClass = (type) => {
     const colors = {
       success: { bg: 'rgba(29,184,122,0.2)', color: '#1db87a' },
@@ -28,6 +41,20 @@ const StaffTopbar = ({ pageTitle }) => {
     };
     return colors[type] || colors.primary;
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
+        setShowNotif(false);
+        setExpandedNotifId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div style={{
@@ -50,10 +77,10 @@ const StaffTopbar = ({ pageTitle }) => {
         {pageTitle}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div ref={notifWrapRef} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {/* Notification Bell */}
         <div
-          onClick={() => setShowNotif(!showNotif)}
+          onClick={toggleNotif}
           style={{
             width: '36px',
             height: '36px',
@@ -125,47 +152,79 @@ const StaffTopbar = ({ pageTitle }) => {
               return (
                 <div
                   key={item.id}
-                  onClick={() => markRead(item)}
                   style={{
                     padding: '12px 18px',
                     borderBottom: '1px solid #e2e8f0',
-                    cursor: 'pointer',
                     background: item.unread ? 'rgba(26,58,92,0.03)' : 'white',
                     display: 'flex',
                     gap: '12px',
-                    alignItems: 'flex-start'
+                    alignItems: 'flex-start',
+                    flexDirection: 'column'
                   }}
                 >
-                  <div style={{
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '50%',
-                    background: color.bg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <i className={`bi ${item.icon}`} style={{ color: color.color, fontSize: '14px' }}></i>
-                  </div>
-                  <div style={{ flex: 1 }}>
+                  <div
+                    onClick={() => toggleExpandedNotif(item.id)}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      gap: '12px',
+                      alignItems: 'flex-start',
+                      width: '100%'
+                    }}
+                  >
                     <div style={{
-                      fontWeight: item.unread ? 700 : 500,
-                      fontSize: '13px'
-                    }}>
-                      {item.text}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#6b7a99' }}>
-                      {item.sub}
-                    </div>
-                  </div>
-                  {item.unread && (
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
+                      width: '34px',
+                      height: '34px',
                       borderRadius: '50%',
-                      background: '#1a3a5c'
-                    }}></div>
+                      background: color.bg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <i className={`bi ${item.icon}`} style={{ color: color.color, fontSize: '14px' }}></i>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontWeight: item.unread ? 700 : 500,
+                        fontSize: '13px'
+                      }}>
+                        {item.text}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7a99' }}>
+                        {item.sub}
+                      </div>
+                    </div>
+                    {item.unread && (
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#1a3a5c'
+                      }}></div>
+                    )}
+                  </div>
+                  {expandedNotifId === item.id && (
+                    <div style={{ paddingLeft: '46px' }}>
+                      {item.unread && (
+                        <button
+                          type="button"
+                          onClick={() => markRead(item)}
+                          style={{
+                            fontSize: '12px',
+                            color: 'white',
+                            background: '#1a3a5c',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 10px',
+                            cursor: 'pointer',
+                            fontFamily: "'DM Sans', sans-serif"
+                          }}
+                        >
+                          Mark as read
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               );

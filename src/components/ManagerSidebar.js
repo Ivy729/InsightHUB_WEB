@@ -1,10 +1,10 @@
 import React from 'react';
 
-const ManagerSidebar = ({ currentPage, showPage, handleLogout }) => {
+const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCount = 0 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', section: 'Overview' },
     { id: 'kpiManage', label: 'Manage KPIs', icon: 'bi-list-check', section: 'KPI Management' },
-    { id: 'verify', label: 'Verify Evidence', icon: 'bi-shield-check', section: 'KPI Management', badge: 3 },
+    { id: 'verify', label: 'Verify Evidence', icon: 'bi-shield-check', section: 'KPI Management', badge: pendingEvidenceCount },
     { id: 'staff', label: 'Staff Members', icon: 'bi-people-fill', section: 'Team' },
     { id: 'profile', label: 'My Profile', icon: 'bi-person-circle', section: 'Account' },
     { id: 'settings', label: 'Settings', icon: 'bi-gear-fill', section: 'Account' },

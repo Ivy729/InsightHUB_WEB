@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const ManagerTopbar = ({ pageTitle }) => {
   const [showNotif, setShowNotif] = useState(false);
+  const [expandedNotifId, setExpandedNotifId] = useState(null);
+  const notifWrapRef = useRef(null);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -34,6 +36,9 @@ const ManagerTopbar = ({ pageTitle }) => {
 
   const toggleNotif = () => {
     setShowNotif(!showNotif);
+    if (showNotif) {
+      setExpandedNotifId(null);
+    }
   };
 
   const markRead = (id) => {
@@ -42,11 +47,29 @@ const ManagerTopbar = ({ pageTitle }) => {
     ));
   };
 
+  const toggleExpandedNotif = (id) => {
+    setExpandedNotifId(prev => (prev === id ? null : id));
+  };
+
   const clearAllNotifications = () => {
     setNotifications([]);
   };
 
   const hasUnread = notifications.some(n => !n.read);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
+        setShowNotif(false);
+        setExpandedNotifId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div style={{
@@ -69,7 +92,7 @@ const ManagerTopbar = ({ pageTitle }) => {
         {pageTitle}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div ref={notifWrapRef} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {/* Notification Bell */}
         <div
           onClick={toggleNotif}
@@ -153,51 +176,83 @@ const ManagerTopbar = ({ pageTitle }) => {
                 notifications.map(notif => (
                   <div
                     key={notif.id}
-                    onClick={() => markRead(notif.id)}
                     style={{
                       padding: '14px 18px',
                       borderBottom: '1px solid #e2e8f0',
-                      cursor: 'pointer',
                       background: notif.read ? 'white' : 'rgba(26,58,92,0.03)',
                       display: 'flex',
                       gap: '12px',
-                      alignItems: 'flex-start'
+                      alignItems: 'flex-start',
+                      flexDirection: 'column'
                     }}
                   >
-                    <div style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '50%',
-                      background: `${notif.color}22`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <i className={`bi ${notif.icon}`} style={{ color: notif.color, fontSize: '14px' }}></i>
-                    </div>
-                    <div style={{ flex: 1 }}>
+                    <div
+                      onClick={() => toggleExpandedNotif(notif.id)}
+                      style={{
+                        cursor: 'pointer',
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'flex-start',
+                        width: '100%'
+                      }}
+                    >
                       <div style={{
-                        fontWeight: notif.read ? 500 : 700,
-                        fontSize: '13px'
-                      }}>
-                        {notif.title}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
-                        {notif.msg}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
-                        {notif.time}
-                      </div>
-                    </div>
-                    {!notif.read && (
-                      <div style={{
-                        width: '8px',
-                        height: '8px',
+                        width: '34px',
+                        height: '34px',
                         borderRadius: '50%',
-                        background: '#1a3a5c',
-                        marginTop: '4px'
-                      }}></div>
+                        background: `${notif.color}22`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <i className={`bi ${notif.icon}`} style={{ color: notif.color, fontSize: '14px' }}></i>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontWeight: notif.read ? 500 : 700,
+                          fontSize: '13px'
+                        }}>
+                          {notif.title}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
+                          {notif.msg}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
+                          {notif.time}
+                        </div>
+                      </div>
+                      {!notif.read && (
+                        <div style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: '#1a3a5c',
+                          marginTop: '4px'
+                        }}></div>
+                      )}
+                    </div>
+                    {expandedNotifId === notif.id && (
+                      <div style={{ paddingLeft: '46px' }}>
+                        {!notif.read && (
+                          <button
+                            type="button"
+                            onClick={() => markRead(notif.id)}
+                            style={{
+                              fontSize: '12px',
+                              color: 'white',
+                              background: '#1a3a5c',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '6px 10px',
+                              cursor: 'pointer',
+                              fontFamily: "'DM Sans', sans-serif"
+                            }}
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))

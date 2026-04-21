@@ -1,35 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const VerifyPage = () => {
-  const [evidence, setEvidence] = useState([
-    {
-      id: 1,
-      staff: 'Ali Samsuri',
-      kpi: 'Research Publications',
-      evidence: 'paper_2025.pdf',
-      submitted: '2 days ago',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      staff: 'Maya Halim',
-      kpi: 'Industry Grants',
-      evidence: 'grant_letter.pdf',
-      submitted: '3 days ago',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      staff: 'Nora Rahman',
-      kpi: 'Student Pass Rate',
-      evidence: 'grades_report.xlsx',
-      submitted: '1 week ago',
-      status: 'pending'
-    }
-  ]);
+const VerifyPage = ({ evidenceList, setEvidenceList }) => {
 
   const verifyEvidence = (id, action) => {
-    setEvidence(evidence.map(e =>
+    setEvidenceList(evidenceList.map(e =>
       e.id === id ? { ...e, status: action === 'Approved' ? 'approved' : 'rejected' } : e
     ).filter(e => e.status === 'pending'));
   };
@@ -60,7 +34,7 @@ const VerifyPage = () => {
           fontSize: '12px',
           fontWeight: 700
         }}>
-          {evidence.length} pending
+          {evidenceList.length} pending
         </span>
       </div>
 
@@ -116,7 +90,7 @@ const VerifyPage = () => {
             </tr>
           </thead>
           <tbody>
-            {evidence.map(item => (
+            {evidenceList.map(item => (
               <tr key={item.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.staff}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.kpi}</td>
@@ -167,7 +141,7 @@ const VerifyPage = () => {
         </table>
       </div>
 
-      {evidence.length === 0 && (
+      {evidenceList.length === 0 && (
         <div style={{
           padding: '40px',
           textAlign: 'center',

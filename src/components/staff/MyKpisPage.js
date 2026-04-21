@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 
-const MyKpisPage = () => {
+const MyKpisPage = ({ kpis = [], onUpdateKpi }) => {
   const [filter, setFilter] = useState('all');
-
-  const kpis = [
-    { id: 1, title: 'Research Publications', subtitle: 'Publish 3 journal papers', category: 'Research', target: '3 papers', progress: 67, deadline: 'Dec 2025', status: 'in-progress' },
-    { id: 2, title: 'Student Pass Rate', subtitle: 'Maintain 90% pass rate', category: 'Teaching', target: '90%', progress: 100, deadline: 'Jun 2025', status: 'achieved' },
-    { id: 3, title: 'Community Service', subtitle: '5 outreach programs', category: 'Service', target: '5 events', progress: 30, deadline: 'Mar 2025', status: 'overdue' }
-  ];
 
   const filtered = filter === 'all' ? kpis : kpis.filter(k => k.status === filter);
 
@@ -57,7 +51,14 @@ const MyKpisPage = () => {
                 background: kpi.status === 'achieved' ? 'rgba(29,184,122,0.12)' : kpi.status === 'in-progress' ? 'rgba(232,160,32,0.12)' : 'rgba(229,62,62,0.1)',
                 color: kpi.status === 'achieved' ? '#1db87a' : kpi.status === 'in-progress' ? '#f5a623' : '#e53e3e'
               }}>{kpi.status === 'achieved' ? 'Achieved' : kpi.status === 'in-progress' ? 'In Progress' : 'Overdue'}</span></td>
-              <td style={{ padding: '13px 14px' }}><button style={{ background: '#1a3a5c', color: 'white', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}><i className="bi bi-pencil me-1"></i>Update</button></td>
+              <td style={{ padding: '13px 14px' }}>
+                <button
+                  onClick={() => onUpdateKpi && onUpdateKpi(kpi.id)}
+                  style={{ background: '#1a3a5c', color: 'white', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                >
+                  <i className="bi bi-pencil me-1"></i>Update
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

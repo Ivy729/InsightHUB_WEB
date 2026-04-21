@@ -33,7 +33,17 @@ const DashboardPage = () => (
       <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0' }}>
         <span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', color: '#1a2233', fontWeight: 700 }}>My KPI Progress</span>
       </div>
-      <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+      <div
+        style={{
+          padding: '18px 22px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          maxHeight: '320px',
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+      >
         {[
           { title: 'Research Publications', category: 'Research', deadline: 'Dec 2025', progress: 67, status: 'in-progress', achievement: '2 of 3 papers published' },
           { title: 'Student Pass Rate', category: 'Teaching', deadline: 'Jun 2025', progress: 100, status: 'achieved', achievement: 'Achieved: 95% pass rate' },

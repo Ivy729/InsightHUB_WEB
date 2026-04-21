@@ -1,7 +1,30 @@
 import React, { useState } from 'react';
 
-const UpdateProgressPage = () => {
-  const [progress, setProgress] = useState(67);
+const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpis }) => {
+  const selectedKpi = kpis.find((kpi) => kpi.id === selectedKpiId) || kpis[0];
+  const [progress, setProgress] = useState(selectedKpi ? selectedKpi.progress : 0);
+
+  const handleKpiChange = (e) => {
+    const nextId = Number(e.target.value);
+    setSelectedKpiId(nextId);
+    const nextKpi = kpis.find((k) => k.id === nextId);
+    setProgress(nextKpi ? nextKpi.progress : 0);
+  };
+
+  const saveProgress = () => {
+    if (!selectedKpi) return;
+    const normalizedProgress = Number(progress);
+    setKpis((prev) =>
+      prev.map((kpi) => {
+        if (kpi.id !== selectedKpi.id) return kpi;
+        let status = 'in-progress';
+        if (normalizedProgress >= 100) status = 'achieved';
+        else if (normalizedProgress < 50) status = 'overdue';
+        return { ...kpi, progress: normalizedProgress, status };
+      })
+    );
+    alert('Progress updated successfully.');
+  };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -10,10 +33,16 @@ const UpdateProgressPage = () => {
         <div style={{ padding: '18px 22px' }}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Select KPI</label>
-            <select style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
-              <option>Research Publications (currently 67%)</option>
-              <option>Student Pass Rate (currently 100%)</option>
-              <option>Community Service (currently 30%)</option>
+            <select
+              value={selectedKpi ? selectedKpi.id : ''}
+              onChange={handleKpiChange}
+              style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}
+            >
+              {kpis.map((kpi) => (
+                <option key={kpi.id} value={kpi.id}>
+                  {kpi.title} (currently {kpi.progress}%)
+                </option>
+              ))}
             </select>
           </div>
 
@@ -38,7 +67,7 @@ const UpdateProgressPage = () => {
             <input type="date" defaultValue="2025-03-24" style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
           </div>
 
-          <button style={{ background: '#1a3a5c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '6px' }}><i className="bi bi-check-circle"></i> Save Progress</button>
+          <button onClick={saveProgress} style={{ background: '#1a3a5c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '6px' }}><i className="bi bi-check-circle"></i> Save Progress</button>
         </div>
       </div>
 

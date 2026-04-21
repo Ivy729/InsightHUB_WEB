@@ -108,6 +108,33 @@ const DashboardManager = () => {
     }
   ]);
 
+  const [evidenceList, setEvidenceList] = useState([
+    {
+      id: 1,
+      staff: 'Ali Samsuri',
+      kpi: 'Research Publications',
+      evidence: 'paper_2025.pdf',
+      submitted: '2 days ago',
+      status: 'pending'
+    },
+    {
+      id: 2,
+      staff: 'Maya Halim',
+      kpi: 'Industry Grants',
+      evidence: 'grant_letter.pdf',
+      submitted: '3 days ago',
+      status: 'pending'
+    },
+    {
+      id: 3,
+      staff: 'Nora Rahman',
+      kpi: 'Student Pass Rate',
+      evidence: 'grades_report.xlsx',
+      submitted: '1 week ago',
+      status: 'pending'
+    }
+  ]);
+
   const pageTitles = {
     dashboard: 'Dashboard',
     kpiManage: 'Manage KPIs',
@@ -133,7 +160,7 @@ const DashboardManager = () => {
       case 'kpiManage':
         return <KpiManagePage kpiList={kpiList} setKpiList={setKpiList} staffList={staffList} />;
       case 'verify':
-        return <VerifyPage kpiList={kpiList} />;
+        return <VerifyPage evidenceList={evidenceList} setEvidenceList={setEvidenceList} />;
       case 'staff':
         return <StaffPage staffList={staffList} setStaffList={setStaffList} kpiList={kpiList} setKpiList={setKpiList} />;
       case 'profile':
@@ -146,11 +173,16 @@ const DashboardManager = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar currentPage={currentPage} showPage={showPage} handleLogout={handleLogout} />
-      <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <Sidebar
+        currentPage={currentPage}
+        showPage={showPage}
+        handleLogout={handleLogout}
+        pendingEvidenceCount={evidenceList.length}
+      />
+      <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <Topbar pageTitle={pageTitle} />
-        <div style={{ padding: '26px 28px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '26px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {renderPage()}
         </div>
       </div>

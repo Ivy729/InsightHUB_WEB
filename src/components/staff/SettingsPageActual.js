@@ -2,86 +2,293 @@ import React, { useState } from 'react';
 
 const SettingsPage = () => {
   const [use24Hour, setUse24Hour] = useState(false);
-  const [currentPass, setCurrentPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const getCurrentTime = () => {
+  const getTimePreview = () => {
     const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
-    const display12 = String(now.getHours() % 12 || 12).padStart(2, '0') + ':' + minutes + ' ' + ampm;
-    return use24Hour ? hours + ':' + minutes : display12;
+    if (use24Hour) {
+      return now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
   };
 
-  const passwordStrength = newPass.length >= 8 ? (newPass.length / 20) * 100 : 0;
+  const handleUpdatePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Please fill in all password fields');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters');
+      return;
+    }
+
+    alert('Password updated successfully!');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0' }}><span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', color: '#1a2233', fontWeight: 700 }}>System Preferences</span></div>
-        <div style={{ padding: '18px 22px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Time Format</label>
-            <div style={{ display: 'flex', gap: '6px', background: '#f4f6fb', borderRadius: '8px', padding: '3px' }}>
-              {['12-Hour', '24-Hour'].map((opt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setUse24Hour(idx === 1)}
-                  style={{
-                    flex: 1, padding: '8px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                    fontSize: '13px', fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
-                    background: (idx === 0 && !use24Hour) || (idx === 1 && use24Hour) ? 'white' : 'transparent',
-                    color: (idx === 0 && !use24Hour) || (idx === 1 && use24Hour) ? '#1a3a5c' : '#6b7a99',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {opt}
-                </button>
-              ))}
+    <div>
+      {/* SYSTEM PREFERENCES */}
+      <div style={{
+        background: 'white',
+        borderRadius: '14px',
+        border: '1px solid #e2e8f0',
+        overflow: 'hidden',
+        marginBottom: '20px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          padding: '22px 28px',
+          borderBottom: '1px solid #e2e8f0'
+        }}>
+          <div style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '10px',
+            background: '#f4f6fb',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <i className="bi bi-display" style={{ fontSize: '19px', color: '#1a3a5c' }}></i>
+          </div>
+          <div>
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', fontWeight: 700, color: '#1a2233' }}>
+              System Preferences
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
+              Customize how the system displays information
             </div>
           </div>
+        </div>
 
-          <div style={{ background: '#f4f6fb', borderRadius: '12px', padding: '16px', textAlign: 'center', marginTop: '12px' }}>
-            <i className="bi bi-clock" style={{ fontSize: '18px', color: '#6b7a99', marginRight: '8px' }}></i>
-            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', fontWeight: 700, color: '#1a2233' }}>
-              {getCurrentTime()}
+        <div style={{
+          padding: '22px 28px',
+          borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a2233' }}>Time Format</div>
+            <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '3px' }}>
+              Choose how times are displayed throughout the system
+            </div>
+          </div>
+          <div style={{ display: 'flex', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: 'white' }}>
+            <button
+              onClick={() => setUse24Hour(false)}
+              style={{
+                padding: '7px 22px',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                background: !use24Hour ? '#1a3a5c' : 'transparent',
+                color: !use24Hour ? 'white' : '#6b7a99',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.18s'
+              }}
+            >
+              12-Hour
+            </button>
+            <button
+              onClick={() => setUse24Hour(true)}
+              style={{
+                padding: '7px 22px',
+                fontSize: '13px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                background: use24Hour ? '#1a3a5c' : 'transparent',
+                color: use24Hour ? 'white' : '#6b7a99',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.18s'
+              }}
+            >
+              24-Hour
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '22px 28px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#6b7a99', marginBottom: '14px' }}>
+            Live Preview
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '10px',
+              padding: '14px 24px',
+              background: '#f4f6fb',
+              minWidth: '180px'
+            }}>
+              <i className="bi bi-clock" style={{ fontSize: '22px', color: '#1a2233' }}></i>
+              <span style={{
+                fontFamily: "'Fraunces', serif",
+                fontSize: '26px',
+                fontWeight: 700,
+                color: '#1a2233',
+                letterSpacing: '1px',
+                minWidth: '130px'
+              }}>
+                {getTimePreview()}
+              </span>
+            </div>
+            <span style={{ fontSize: '13px', color: '#6b7a99' }}>
+              Current system time displayed in your selected format.
             </span>
           </div>
         </div>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0' }}><span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', color: '#1a2233', fontWeight: 700 }}>Security</span></div>
-        <div style={{ padding: '18px 22px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Current Password</label>
-            <input type="password" value={currentPass} onChange={(e) => setCurrentPass(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
+      {/* SECURITY */}
+      <div style={{
+        background: 'white',
+        borderRadius: '14px',
+        border: '1px solid #e2e8f0',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          padding: '22px 28px',
+          borderBottom: '1px solid #e2e8f0'
+        }}>
+          <div style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '10px',
+            background: 'rgba(29,184,122,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <i className="bi bi-shield-lock-fill" style={{ fontSize: '19px', color: '#1db87a' }}></i>
           </div>
+          <div>
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', fontWeight: 700, color: '#1a2233' }}>
+              Security
+            </div>
+            <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
+              Manage your account password and security settings
+            </div>
+          </div>
+        </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>New Password</label>
-            <input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
-            <div style={{ marginTop: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <div style={{ flex: 1, background: '#e2e8f0', borderRadius: '20px', height: '6px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(passwordStrength, 100)}%`, background: '#1a3a5c', borderRadius: '20px' }}></div>
-                </div>
-                <span style={{ fontSize: '11px', color: '#6b7a99' }}>{newPass.length}/20</span>
+        <div style={{ padding: '22px 28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
+                Current Password
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
+                New Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '14px'
+                }}
+              />
+              <div style={{
+                height: '4px',
+                borderRadius: '4px',
+                background: '#e2e8f0',
+                marginTop: '8px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min((newPassword.length / 12) * 100, 100)}%`,
+                  background: '#1db87a',
+                  borderRadius: '4px'
+                }}></div>
               </div>
-              <span style={{ fontSize: '11px', color: '#6b7a99' }}>Must be at least 8 characters</span>
+              <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
+                {newPassword.length < 8 ? `${newPassword.length}/8 characters - too short` : 'Password length looks good'}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '14px'
+                }}
+              />
             </div>
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Confirm Password</label>
-            <input type="password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid ' + (confirmPass && newPass !== confirmPass ? '#e53e3e' : '#e2e8f0'), borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
-            {confirmPass && newPass !== confirmPass && <div style={{ fontSize: '11px', color: '#e53e3e', marginTop: '4px' }}><i className="bi bi-exclamation-circle"></i> Passwords do not match</div>}
-          </div>
-
-          <button style={{ background: '#1a3a5c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '6px', opacity: (currentPass && newPass && confirmPass && newPass === confirmPass && newPass.length >= 8) ? 1 : 0.5 }}>
-            <i className="bi bi-lock"></i> Update Password
+          <button
+            onClick={handleUpdatePassword}
+            style={{
+              background: '#1a3a5c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="bi bi-shield-lock"></i> Update Password
           </button>
         </div>
       </div>

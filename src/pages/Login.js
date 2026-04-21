@@ -12,11 +12,10 @@ const Login = () => {
   
   const [regFirstName, setRegFirstName] = useState('');
   const [regLastName, setRegLastName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [regRole, setRegRole] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
-  const [terms, setTerms] = useState(false);
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
   const [regErrors, setRegErrors] = useState({});
@@ -64,8 +63,8 @@ const Login = () => {
 
     if (!regFirstName.trim()) errors.firstName = true;
     if (!regLastName.trim()) errors.lastName = true;
+    if (!regPhone.trim()) errors.phone = true;
     if (!regEmail.trim()) errors.email = true;
-    if (!regRole) errors.role = true;
     if (!regPassword.trim()) errors.password = true;
     if (!regConfirm.trim()) errors.confirm = true;
 
@@ -78,11 +77,6 @@ const Login = () => {
     if (!regEmail.trim().toLowerCase().endsWith('@company.com')) {
       setRegErrors({ email: true });
       setRegError('Email must end with @company.com');
-      return;
-    }
-
-    if (!terms) {
-      setRegError('Please agree to the Terms & Conditions.');
       return;
     }
 
@@ -109,11 +103,10 @@ const Login = () => {
   const resetRegisterForm = () => {
     setRegFirstName('');
     setRegLastName('');
+    setRegPhone('');
     setRegEmail('');
-    setRegRole('');
     setRegPassword('');
     setRegConfirm('');
-    setTerms(false);
   };
 
   const showForgotPass = () => {
@@ -242,11 +235,11 @@ const Login = () => {
                 )}
 
                 <div className="mb-3">
-                  <label className="form-label">Username</label>
+                  <label className="form-label">Email</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="your.username"
+                    placeholder="user@company.com"
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
                   />
@@ -270,11 +263,11 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#1a2233', display: 'block', marginBottom: '10px' }}>
                     Sign in as:
                   </label>
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                       <input
                         type="radio"
@@ -338,7 +331,7 @@ const Login = () => {
 
             {/* REGISTER SECTION */}
             {activeTab === 'register' && (
-              <div className="form-section active" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+              <div className="form-section active">
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
                   Create Account
                 </h2>
@@ -374,35 +367,8 @@ const Login = () => {
                   </div>
                 )}
 
-                <div className="row g-3">
-                  <div className="col-6">
-                    <label className={`form-label ${getLabelErrorClass('firstName')}`}>First Name</label>
-                    <input
-                      type="text"
-                      className={`form-control ${getFieldErrorClass('firstName')}`}
-                      value={regFirstName}
-                      onChange={(e) => {
-                        setRegFirstName(e.target.value);
-                        clearFieldError('firstName');
-                      }}
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className={`form-label ${getLabelErrorClass('lastName')}`}>Last Name</label>
-                    <input
-                      type="text"
-                      className={`form-control ${getFieldErrorClass('lastName')}`}
-                      value={regLastName}
-                      onChange={(e) => {
-                        setRegLastName(e.target.value);
-                        clearFieldError('lastName');
-                      }}
-                    />
-                  </div>
-                </div>
-
                 <div className="mb-3">
-                  <label className={`form-label ${getLabelErrorClass('email')}`}>Email Address</label>
+                  <label className={`form-label ${getLabelErrorClass('email')}`}>Email</label>
                   <input
                     type="email"
                     className={`form-control ${getFieldErrorClass('email')}`}
@@ -416,19 +382,42 @@ const Login = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label className={`form-label ${getLabelErrorClass('role')}`}>Role</label>
-                  <select
-                    className={`form-select ${getFieldErrorClass('role')}`}
-                    value={regRole}
+                  <label className={`form-label ${getLabelErrorClass('firstName')}`}>First Name</label>
+                  <input
+                    type="text"
+                    className={`form-control ${getFieldErrorClass('firstName')}`}
+                    value={regFirstName}
                     onChange={(e) => {
-                      setRegRole(e.target.value);
-                      clearFieldError('role');
+                      setRegFirstName(e.target.value);
+                      clearFieldError('firstName');
                     }}
-                  >
-                    <option value="">-- Select a role --</option>
-                    <option value="manager">Manager</option>
-                    <option value="staff">Staff</option>
-                  </select>
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className={`form-label ${getLabelErrorClass('lastName')}`}>Last Name</label>
+                  <input
+                    type="text"
+                    className={`form-control ${getFieldErrorClass('lastName')}`}
+                    value={regLastName}
+                    onChange={(e) => {
+                      setRegLastName(e.target.value);
+                      clearFieldError('lastName');
+                    }}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className={`form-label ${getLabelErrorClass('phone')}`}>Phone</label>
+                  <input
+                    type="tel"
+                    className={`form-control ${getFieldErrorClass('phone')}`}
+                    value={regPhone}
+                    onChange={(e) => {
+                      setRegPhone(e.target.value);
+                      clearFieldError('phone');
+                    }}
+                  />
                 </div>
 
                 <div className="mb-3">
@@ -456,7 +445,7 @@ const Login = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label className={`form-label ${getLabelErrorClass('confirm')}`}>Confirm Password</label>
+                  <label className={`form-label ${getLabelErrorClass('confirm')}`}>Confirm password</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showRegConfirm ? 'text' : 'password'}
@@ -473,20 +462,6 @@ const Login = () => {
                       onClick={() => setShowRegConfirm(!showRegConfirm)}
                       style={{ cursor: 'pointer' }}
                     ></i>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="checkbox"
-                      id="terms"
-                      checked={terms}
-                      onChange={(e) => setTerms(e.target.checked)}
-                    />
-                    <label htmlFor="terms" style={{ fontSize: '13px', marginBottom: '0' }}>
-                      I agree to the Terms & Conditions
-                    </label>
                   </div>
                 </div>
 
