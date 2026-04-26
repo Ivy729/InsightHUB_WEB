@@ -29,8 +29,54 @@ const Login = () => {
   const [newPass, setNewPass] = useState('');
   const [confirmNewPass, setConfirmNewPass] = useState('');
 
+  const platformHighlights = [
+    'Real-time KPI tracking and monitoring',
+    'Evidence verification and approval workflow',
+    'Advanced analytics and reporting tools',
+    'Secure role-based access control',
+  ];
+
+  const sectionTitleStyle = {
+    fontFamily: "'Fraunces', serif",
+    fontSize: '26px',
+    marginBottom: '6px',
+    color: '#1a2233',
+  };
+
+  const sectionSubtitleStyle = {
+    fontSize: '13px',
+    color: '#6b7a99',
+    marginBottom: '28px',
+  };
+
+  const primaryActionButtonStyle = {
+    background: '#1a3a5c',
+    color: 'white',
+    border: 'none',
+    padding: '11px 16px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    width: '100%',
+  };
+
+  const ghostLinkButtonStyle = {
+    background: 'transparent',
+    color: '#1a3a5c',
+    border: 'none',
+    fontSize: '13px',
+    cursor: 'pointer',
+    width: '100%',
+    textDecoration: 'underline',
+  };
+
   const switchTab = (tab) => {
     setActiveTab(tab);
+  };
+
+  const toggleVisibility = (setter) => {
+    setter((prev) => !prev);
   };
 
   const clearFieldError = (fieldName) => {
@@ -169,22 +215,12 @@ const Login = () => {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: 'white' }}>
-              <i className="bi bi-check-circle-fill" style={{ fontSize: '18px', color: '#1db87a' }}></i>
-              Real-time KPI tracking and monitoring
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: 'white' }}>
-              <i className="bi bi-check-circle-fill" style={{ fontSize: '18px', color: '#1db87a' }}></i>
-              Evidence verification and approval workflow
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: 'white' }}>
-              <i className="bi bi-check-circle-fill" style={{ fontSize: '18px', color: '#1db87a' }}></i>
-              Advanced analytics and reporting tools
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: 'white' }}>
-              <i className="bi bi-check-circle-fill" style={{ fontSize: '18px', color: '#1db87a' }}></i>
-              Secure role-based access control
-            </div>
+            {platformHighlights.map((text) => (
+              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: 'white' }}>
+                <i className="bi bi-check-circle-fill" style={{ fontSize: '18px', color: '#1db87a' }}></i>
+                {text}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -209,10 +245,10 @@ const Login = () => {
 
             {activeTab === 'login' && (
               <div className="form-section active">
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Sign In
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
+                <p style={sectionSubtitleStyle}>
                   Enter your credentials to access your dashboard
                 </p>
 
@@ -253,7 +289,7 @@ const Login = () => {
                     />
                     <i
                       className={`bi ${showLoginPassword ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      onClick={() => toggleVisibility(setShowLoginPassword)}
                       style={{ cursor: 'pointer' }}
                     ></i>
                   </div>
@@ -291,15 +327,7 @@ const Login = () => {
                   className="btn-login"
                   onClick={doLogin}
                   style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
+                    ...primaryActionButtonStyle,
                     marginBottom: '16px',
                   }}
                 >
@@ -310,15 +338,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={showForgotPass}
-                  style={{
-                    background: 'transparent',
-                    color: '#1a3a5c',
-                    border: 'none',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    width: '100%',
-                    textDecoration: 'underline',
-                  }}
+                  style={ghostLinkButtonStyle}
                 >
                   Forgot your password?
                 </button>
@@ -327,10 +347,10 @@ const Login = () => {
 
             {activeTab === 'register' && (
               <div className="form-section active">
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Create Account
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
+                <p style={sectionSubtitleStyle}>
                   Join our KPI management system
                 </p>
 
@@ -430,7 +450,7 @@ const Login = () => {
                     />
                     <i
                       className={`bi ${showRegPassword ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      onClick={() => toggleVisibility(setShowRegPassword)}
                       style={{ cursor: 'pointer' }}
                     ></i>
                   </div>
@@ -454,7 +474,7 @@ const Login = () => {
                     />
                     <i
                       className={`bi ${showRegConfirm ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => setShowRegConfirm(!showRegConfirm)}
+                      onClick={() => toggleVisibility(setShowRegConfirm)}
                       style={{ cursor: 'pointer' }}
                     ></i>
                   </div>
@@ -463,17 +483,7 @@ const Login = () => {
                 <button
                   className="btn-login"
                   onClick={doRegister}
-                  style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  style={primaryActionButtonStyle}
                 >
                   <i className="bi bi-person-plus me-2"></i>
                   Create Account
@@ -483,10 +493,10 @@ const Login = () => {
 
             {activeTab === 'forgotPass' && (
               <div className="form-section active">
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Forgot Password
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
+                <p style={sectionSubtitleStyle}>
                   Enter your email to reset your password
                 </p>
 
@@ -505,15 +515,7 @@ const Login = () => {
                   className="btn-login"
                   onClick={showVerifyCodeOnly}
                   style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
+                    ...primaryActionButtonStyle,
                     marginBottom: '12px',
                   }}
                 >
@@ -523,15 +525,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => switchTab('login')}
-                  style={{
-                    background: 'transparent',
-                    color: '#1a3a5c',
-                    border: 'none',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    width: '100%',
-                    textDecoration: 'underline',
-                  }}
+                  style={ghostLinkButtonStyle}
                 >
                   Back to Sign In
                 </button>
@@ -540,10 +534,10 @@ const Login = () => {
 
             {activeTab === 'verifyCodeOnly' && (
               <div className="form-section active">
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Verify Code
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
+                <p style={sectionSubtitleStyle}>
                   Check your email for the verification code
                 </p>
 
@@ -562,15 +556,7 @@ const Login = () => {
                   className="btn-login"
                   onClick={showResetPassword}
                   style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
+                    ...primaryActionButtonStyle,
                     marginBottom: '12px',
                   }}
                 >
@@ -580,15 +566,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => switchTab('forgotPass')}
-                  style={{
-                    background: 'transparent',
-                    color: '#1a3a5c',
-                    border: 'none',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    width: '100%',
-                    textDecoration: 'underline',
-                  }}
+                  style={ghostLinkButtonStyle}
                 >
                   Back
                 </button>
@@ -597,10 +575,10 @@ const Login = () => {
 
             {activeTab === 'resetPassword' && (
               <div className="form-section active">
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '6px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Reset Password
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
+                <p style={sectionSubtitleStyle}>
                   Enter your new password
                 </p>
 
@@ -629,17 +607,7 @@ const Login = () => {
                 <button
                   className="btn-login"
                   onClick={resetPasswordAndBackToLogin}
-                  style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  style={primaryActionButtonStyle}
                 >
                   Reset Password
                 </button>
@@ -651,7 +619,7 @@ const Login = () => {
                 <div style={{ fontSize: '56px', color: '#1db87a', marginBottom: '16px' }}>
                   <i className="bi bi-check-circle-fill"></i>
                 </div>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', marginBottom: '10px', color: '#1a2233' }}>
+                <h2 style={sectionTitleStyle}>
                   Password Reset Successful
                 </h2>
                 <p style={{ fontSize: '13px', color: '#6b7a99', marginBottom: '28px' }}>
@@ -661,17 +629,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => switchTab('login')}
-                  style={{
-                    background: '#1a3a5c',
-                    color: 'white',
-                    border: 'none',
-                    padding: '11px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
+                  style={primaryActionButtonStyle}
                 >
                   Back to Sign In
                 </button>

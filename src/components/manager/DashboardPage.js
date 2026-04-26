@@ -86,6 +86,26 @@ const DashboardPage = ({ staffList, kpiList }) => {
 
   const completionRate = totalKpis > 0 ? Math.round((achievedKpis / totalKpis) * 100) : 0;
 
+  const tableHeaderStyle = {
+    textAlign: 'left',
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    color: '#6b7a99',
+    padding: '10px 14px',
+  };
+
+  const getStatusPillStyle = (status) => {
+    const styleMap = {
+      achieved: { background: 'rgba(29,184,122,0.12)', color: '#1db87a', label: 'Achieved' },
+      'in-progress': { background: 'rgba(232,160,32,0.12)', color: '#f5a623', label: 'In Progress' },
+      overdue: { background: 'rgba(229,62,62,0.1)', color: '#e53e3e', label: 'Overdue' },
+    };
+
+    return styleMap[status] || styleMap.overdue;
+  };
+
   return (
     <div>
       {/* STAT CARDS */}
@@ -238,51 +258,11 @@ const DashboardPage = ({ staffList, kpiList }) => {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f4f6fb', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: '#6b7a99',
-                  padding: '10px 14px'
-                }}>#</th>
-                <th style={{
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: '#6b7a99',
-                  padding: '10px 14px'
-                }}>KPI Title</th>
-                <th style={{
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: '#6b7a99',
-                  padding: '10px 14px'
-                }}>Staff</th>
-                <th style={{
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: '#6b7a99',
-                  padding: '10px 14px'
-                }}>Department</th>
-                <th style={{
-                  textAlign: 'left',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  color: '#6b7a99',
-                  padding: '10px 14px'
-                }}>Status</th>
+                <th style={tableHeaderStyle}>#</th>
+                <th style={tableHeaderStyle}>KPI Title</th>
+                <th style={tableHeaderStyle}>Staff</th>
+                <th style={tableHeaderStyle}>Department</th>
+                <th style={tableHeaderStyle}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -296,17 +276,22 @@ const DashboardPage = ({ staffList, kpiList }) => {
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>{kpi.staff}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>{kpi.dept}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>
+                    {(() => {
+                      const statusStyle = getStatusPillStyle(kpi.status);
+                      return (
                     <span style={{
                       display: 'inline-block',
                       padding: '3px 10px',
                       borderRadius: '20px',
                       fontSize: '11px',
                       fontWeight: 700,
-                      background: kpi.status === 'achieved' ? 'rgba(29,184,122,0.12)' : kpi.status === 'in-progress' ? 'rgba(232,160,32,0.12)' : 'rgba(229,62,62,0.1)',
-                      color: kpi.status === 'achieved' ? '#1db87a' : kpi.status === 'in-progress' ? '#f5a623' : '#e53e3e'
+                      background: statusStyle.background,
+                      color: statusStyle.color
                     }}>
-                      {kpi.status === 'achieved' ? 'Achieved' : kpi.status === 'in-progress' ? 'In Progress' : 'Overdue'}
+                      {statusStyle.label}
                     </span>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

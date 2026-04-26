@@ -158,6 +158,21 @@ let pendingProfilePic = null;
 let achievementChart = null;
 let currentTimeFormat = "12h";
 
+function openModal(modalId) {
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+function clearInputFields(ids) {
+  ids.forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) input.value = "";
+  });
+}
+
 function getFullName(staff) {
   return `${staff.firstName} ${staff.lastName}`.trim();
 }
@@ -257,14 +272,8 @@ function filterStaffList(term) {
 }
 
 function openAddStaffModal() {
-  document.getElementById("staffFirstName").value = "";
-  document.getElementById("staffLastName").value = "";
-  document.getElementById("staffDepartment").value = "";
-  document.getElementById("staffEmail").value = "";
-  document.getElementById("staffPhone").value = "";
-
-  const modal = new bootstrap.Modal(document.getElementById("staffModal"));
-  modal.show();
+  clearInputFields(["staffFirstName", "staffLastName", "staffDepartment", "staffEmail", "staffPhone"]);
+  openModal("staffModal");
 }
 
 function hideModal(modalId) {
@@ -319,8 +328,7 @@ function editStaff(id) {
   document.getElementById("editStaffEmail").value = staff.email;
   document.getElementById("editStaffPhone").value = staff.phone;
 
-  const modal = new bootstrap.Modal(document.getElementById("editStaffModal"));
-  modal.show();
+  openModal("editStaffModal");
 }
 
 function saveEditStaff() {
@@ -631,17 +639,12 @@ function openNewKPI() {
   document.getElementById("kpiModalTitle").textContent = "New KPI";
   document.getElementById("kpiSaveBtn").innerHTML = `<i class="bi bi-plus-lg"></i> Create KPI`;
 
-  document.getElementById("kpiTitle").value = "";
-  document.getElementById("kpiDesc").value = "";
-  document.getElementById("kpiTarget").value = "";
-  document.getElementById("kpiStartDate").value = "";
-  document.getElementById("kpiDeadline").value = "";
+  clearInputFields(["kpiTitle", "kpiDesc", "kpiTarget", "kpiStartDate", "kpiDeadline"]);
   document.getElementById("kpiDepartment").value = "";
   updateKpiStaffDropdown();
   document.getElementById("kpiStaff").value = "";
 
-  const modal = new bootstrap.Modal(document.getElementById("kpiModal"));
-  modal.show();
+  openModal("kpiModal");
 }
 
 function openEditKPI(btn) {
@@ -681,8 +684,7 @@ function openEditKPI(btn) {
   updateKpiStaffDropdown();
   document.getElementById("kpiStaff").value = staff;
 
-  const modal = new bootstrap.Modal(document.getElementById("kpiModal"));
-  modal.show();
+  openModal("kpiModal");
 }
 
 function saveKPI() {
