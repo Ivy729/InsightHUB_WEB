@@ -29,6 +29,13 @@ const MyKpisPage = ({ kpis = [], onUpdateKpi }) => {
           </tr>
         </thead>
         <tbody>
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={8} style={{ padding: '22px 14px', textAlign: 'center', color: '#6b7a99', fontSize: '14px' }}>
+                No KPI assigned yet.
+              </td>
+            </tr>
+          )}
           {filtered.map((kpi, idx) => (
             <tr key={kpi.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
               <td style={{ padding: '13px 14px' }}>{idx + 1}</td>

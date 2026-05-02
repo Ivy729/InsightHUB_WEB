@@ -1,6 +1,13 @@
 import React from 'react';
 
-const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
+const StaffSidebar = ({ currentPage, showPage, handleLogout, userName = 'Staff User', userRole = 'staff' }) => {
+  const initials = userName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join('') || 'SU';
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', section: 'Overview' },
     { id: 'myKpis', label: 'My KPIs', icon: 'bi-list-check', section: 'My KPIs' },
@@ -75,7 +82,8 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
                   {item.section}
                 </div>
               )}
-              <a
+              <button
+                type="button"
                 onClick={() => showPage(item.id)}
                 style={{
                   display: 'flex',
@@ -90,7 +98,11 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
                   cursor: 'pointer',
                   transition: 'all 0.18s',
                   background: currentPage === item.id ? 'rgba(232,160,32,0.18)' : 'transparent',
-                  textDecoration: 'none'
+                  textDecoration: 'none',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== item.id) {
@@ -107,7 +119,7 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
               >
                 <i className={`bi ${item.icon}`} style={{ fontSize: '17px', width: '20px', textAlign: 'center' }}></i>
                 {item.label}
-              </a>
+              </button>
             </div>
           );
         })}
@@ -133,18 +145,19 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
             color: 'white',
             flexShrink: 0
           }}>
-            AS
+            {initials}
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>
-              Ali Samsuri
+              {userName}
             </div>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>
-              Staff
+              {String(userRole).charAt(0).toUpperCase() + String(userRole).slice(1)}
             </div>
           </div>
         </div>
-        <a
+        <button
+          type="button"
           onClick={handleLogout}
           style={{
             display: 'flex',
@@ -157,7 +170,12 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
             color: 'rgba(255,255,255,0.65)',
             cursor: 'pointer',
             textDecoration: 'none',
-            transition: 'all 0.18s'
+            transition: 'all 0.18s',
+            border: 'none',
+            background: 'transparent',
+            fontFamily: 'inherit',
+            width: '100%',
+            textAlign: 'left',
           }}
           onMouseEnter={(e) => {
             e.target.style.color = 'white';
@@ -167,8 +185,8 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout }) => {
           }}
         >
           <i className="bi bi-box-arrow-left" style={{ fontSize: '17px', width: '20px', textAlign: 'center' }}></i>
-          Sign Out
-        </a>
+          Log Out
+        </button>
       </div>
     </aside>
   );

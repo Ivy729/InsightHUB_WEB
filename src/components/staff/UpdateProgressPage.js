@@ -4,6 +4,19 @@ const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpi
   const selectedKpi = kpis.find((kpi) => kpi.id === selectedKpiId) || kpis[0];
   const [progress, setProgress] = useState(selectedKpi ? selectedKpi.progress : 0);
 
+  if (kpis.length === 0) {
+    return (
+      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px' }}>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', color: '#1a2233', marginBottom: '8px' }}>
+          Update KPI Progress
+        </div>
+        <div style={{ color: '#6b7a99', fontSize: '14px' }}>
+          No KPI assigned yet. Once a KPI is assigned to your account, you can update progress here.
+        </div>
+      </div>
+    );
+  }
+
   const handleKpiChange = (e) => {
     const nextId = Number(e.target.value);
     setSelectedKpiId(nextId);

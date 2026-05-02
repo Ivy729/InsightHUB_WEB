@@ -1,6 +1,13 @@
 import React from 'react';
 
-const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCount = 0 }) => {
+const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCount = 0, userName = 'Manager User', userRole = 'manager' }) => {
+  const initials = userName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join('') || 'MU';
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', section: 'Overview' },
     { id: 'kpiManage', label: 'Manage KPIs', icon: 'bi-list-check', section: 'KPI Management' },
@@ -75,7 +82,8 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
                   {item.section}
                 </div>
               )}
-              <a
+              <button
+                type="button"
                 onClick={() => showPage(item.id)}
                 style={{
                   display: 'flex',
@@ -90,7 +98,11 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
                   cursor: 'pointer',
                   transition: 'all 0.18s',
                   background: currentPage === item.id ? 'rgba(232,160,32,0.18)' : 'transparent',
-                  textDecoration: 'none'
+                  textDecoration: 'none',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== item.id) {
@@ -107,7 +119,7 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
               >
                 <i className={`bi ${item.icon}`} style={{ fontSize: '17px', width: '20px', textAlign: 'center' }}></i>
                 {item.label}
-                {item.badge && (
+                {Number(item.badge) > 0 && (
                   <span style={{
                     marginLeft: 'auto',
                     background: '#e8a020',
@@ -120,7 +132,7 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
                     {item.badge}
                   </span>
                 )}
-              </a>
+              </button>
             </div>
           );
         })}
@@ -146,18 +158,19 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
             color: 'white',
             flexShrink: 0
           }}>
-            JD
+            {initials}
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>
-              Dr. John Doe
+              {userName}
             </div>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>
-              Manager
+              {String(userRole).charAt(0).toUpperCase() + String(userRole).slice(1)}
             </div>
           </div>
         </div>
-        <a
+        <button
+          type="button"
           onClick={handleLogout}
           style={{
             display: 'flex',
@@ -170,7 +183,12 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
             color: 'rgba(255,255,255,0.65)',
             cursor: 'pointer',
             textDecoration: 'none',
-            transition: 'all 0.18s'
+            transition: 'all 0.18s',
+            border: 'none',
+            background: 'transparent',
+            fontFamily: 'inherit',
+            width: '100%',
+            textAlign: 'left',
           }}
           onMouseEnter={(e) => {
             e.target.style.color = 'white';
@@ -180,8 +198,8 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
           }}
         >
           <i className="bi bi-box-arrow-left" style={{ fontSize: '17px', width: '20px', textAlign: 'center' }}></i>
-          Sign Out
-        </a>
+          Log Out
+        </button>
       </div>
     </aside>
   );

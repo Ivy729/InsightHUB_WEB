@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/login.css';
+import { API_BASE_URL } from '../apiConfig';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState('manager');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState(false);
+  const [loginError, setLoginError] = useState('');
   
   const [regFirstName, setRegFirstName] = useState('');
   const [regLastName, setRegLastName] = useState('');
@@ -16,6 +17,7 @@ const Login = () => {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
+  const [regRole, setRegRole] = useState('staff');
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
   const [regErrors, setRegErrors] = useState({});
@@ -28,6 +30,9 @@ const Login = () => {
   const [verifyCode, setVerifyCode] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmNewPass, setConfirmNewPass] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const verifyInputRefs = useRef([]);
 
   const platformHighlights = [
     'Real-time KPI tracking and monitoring',
@@ -87,21 +92,45 @@ const Login = () => {
     });
   };
 
-  const doLogin = () => {
-    if (!loginUsername || !loginPassword) {
-      setLoginError(true);
-      setTimeout(() => setLoginError(false), 3000);
+  const doLogin = async () => {
+    setLoginError('');
+
+    if (!loginUsername.trim() || !loginPassword) {
+      setLoginError('Please enter both email and password.');
       return;
     }
 
-    if (selectedRole === 'staff') {
-      navigate('/dashboard-staff');
-    } else {
-      navigate('/dashboard-manager');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginUsername.trim(),
+          password: loginPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setLoginError(data.message || 'Sign in failed. Please try again.');
+        return;
+      }
+
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('authUser', JSON.stringify(data.user));
+
+      if (data.user.role === 'staff') {
+        navigate('/dashboard-staff');
+      } else {
+        navigate('/dashboard-manager');
+      }
+    } catch (error) {
+      setLoginError('Cannot connect to server. Please make sure backend is running.');
     }
   };
 
-  const doRegister = () => {
+  const doRegister = async () => {
     setRegError('');
     setRegErrors({});
 
@@ -120,9 +149,11 @@ const Login = () => {
       return;
     }
 
-    if (!regEmail.trim().toLowerCase().endsWith('@company.com')) {
+    const emailValue = regEmail.trim();
+    const validEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!validEmailPattern.test(emailValue)) {
       setRegErrors({ email: true });
-      setRegError('Email must end with @company.com');
+      setRegError('Please enter a valid email address.');
       return;
     }
 
@@ -138,12 +169,39 @@ const Login = () => {
       return;
     }
 
-    setRegSuccess(true);
-    setTimeout(() => {
-      setRegSuccess(false);
-      switchTab('login');
-      resetRegisterForm();
-    }, 1800);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${regFirstName.trim()} ${regLastName.trim()}`.trim(),
+          email: regEmail.trim(),
+          password: regPassword,
+          role: regRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          setRegErrors({ email: true });
+          setRegError('Email already registered. Try another email or sign in.');
+          return;
+        }
+        setRegError(data.message || 'Failed to create account. Please try again.');
+        return;
+      }
+
+      setRegSuccess(true);
+      setTimeout(() => {
+        setRegSuccess(false);
+        switchTab('login');
+        resetRegisterForm();
+      }, 1800);
+    } catch (error) {
+      setRegError('Cannot connect to server. Please make sure backend is running.');
+    }
   };
 
   const resetRegisterForm = () => {
@@ -153,40 +211,117 @@ const Login = () => {
     setRegEmail('');
     setRegPassword('');
     setRegConfirm('');
+    setRegRole('staff');
+  };
+
+  const clearForgotState = () => {
+    setForgotError('');
+    setForgotSuccess('');
   };
 
   const showForgotPass = () => {
+    clearForgotState();
     switchTab('forgotPass');
   };
 
-  const showVerifyCodeOnly = () => {
-    if (!forgotEmail) {
-      alert('Please enter your email.');
+  const showVerifyCodeOnly = async () => {
+    clearForgotState();
+    const emailValue = forgotEmail.trim();
+    const validEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!validEmailPattern.test(emailValue)) {
+      setForgotError('Please enter a valid email address.');
       return;
     }
-    switchTab('verifyCodeOnly');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailValue }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setForgotError(data.message || 'Failed to send verification code.');
+        return;
+      }
+
+      setForgotSuccess('Verification code sent. Please check your email.');
+      switchTab('verifyCodeOnly');
+    } catch (error) {
+      setForgotError('Cannot connect to server. Please make sure backend is running.');
+    }
   };
 
-  const showResetPassword = () => {
-    if (!verifyCode) {
-      alert('Please enter the verification code.');
+  const showResetPassword = async () => {
+    clearForgotState();
+    const codeValue = verifyCode.trim();
+
+    if (!/^\d{4}$/.test(codeValue)) {
+      setForgotError('Please enter the 4-digit verification code.');
       return;
     }
-    switchTab('resetPassword');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail.trim(),
+          code: codeValue,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setForgotError(data.message || 'Verification code is invalid.');
+        return;
+      }
+
+      setForgotSuccess('Code verified. You can now set a new password.');
+      switchTab('resetPassword');
+    } catch (error) {
+      setForgotError('Cannot connect to server. Please make sure backend is running.');
+    }
   };
 
-  const resetPasswordAndBackToLogin = () => {
+  const resetPasswordAndBackToLogin = async () => {
+    clearForgotState();
     if (newPass.length < 8) {
-      alert('Password must be at least 8 characters.');
+      setForgotError('Password must be at least 8 characters.');
       return;
     }
 
     if (newPass !== confirmNewPass) {
-      alert('Passwords do not match.');
+      setForgotError('Passwords do not match.');
       return;
     }
 
-    switchTab('resetSuccess');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail.trim(),
+          code: verifyCode.trim(),
+          newPassword: newPass,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setForgotError(data.message || 'Failed to reset password.');
+        return;
+      }
+
+      setNewPass('');
+      setConfirmNewPass('');
+      setVerifyCode('');
+      switchTab('resetSuccess');
+    } catch (error) {
+      setForgotError('Cannot connect to server. Please make sure backend is running.');
+    }
   };
 
   const getFieldErrorClass = (fieldName) => {
@@ -195,6 +330,39 @@ const Login = () => {
 
   const getLabelErrorClass = (fieldName) => {
     return regErrors[fieldName] ? 'field-error-label' : '';
+  };
+
+  const updateVerifyDigit = (index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const codeChars = verifyCode.padEnd(4, ' ').split('');
+    codeChars[index] = digit || ' ';
+    const nextCode = codeChars.join('').replace(/\s+$/g, '');
+    setVerifyCode(nextCode);
+
+    if (digit && index < 3) {
+      verifyInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleVerifyKeyDown = (index, event) => {
+    if (event.key === 'Backspace' && !verifyCode[index] && index > 0) {
+      verifyInputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowLeft' && index > 0) {
+      verifyInputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowRight' && index < 3) {
+      verifyInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleVerifyPaste = (event) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    if (!pasted) return;
+    setVerifyCode(pasted);
+    const nextIndex = Math.min(pasted.length, 3);
+    verifyInputRefs.current[nextIndex]?.focus();
   };
 
   return (
@@ -262,7 +430,7 @@ const Login = () => {
                     fontSize: '13px',
                   }}>
                     <i className="bi bi-exclamation-circle me-2"></i>
-                    Please enter both username and password
+                    {loginError}
                   </div>
                 )}
 
@@ -271,9 +439,12 @@ const Login = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="user@company.com"
+                    placeholder="user@example.com"
                     value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
+                    onChange={(e) => {
+                      setLoginUsername(e.target.value);
+                      if (loginError) setLoginError('');
+                    }}
                   />
                 </div>
 
@@ -285,7 +456,10 @@ const Login = () => {
                       className="form-control"
                       placeholder="••••••••"
                       value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                        if (loginError) setLoginError('');
+                      }}
                     />
                     <i
                       className={`bi ${showLoginPassword ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
@@ -480,6 +654,18 @@ const Login = () => {
                   </div>
                 </div>
 
+                <div className="mb-3">
+                  <label className="form-label">Role</label>
+                  <select
+                    className="form-select role-select"
+                    value={regRole}
+                    onChange={(e) => setRegRole(e.target.value)}
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="manager">Manager</option>
+                  </select>
+                </div>
+
                 <button
                   className="btn-login"
                   onClick={doRegister}
@@ -499,6 +685,34 @@ const Login = () => {
                 <p style={sectionSubtitleStyle}>
                   Enter your email to reset your password
                 </p>
+
+                {forgotError && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(229,62,62,0.12)',
+                    color: '#e53e3e',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-exclamation-circle me-2"></i>
+                    {forgotError}
+                  </div>
+                )}
+
+                {forgotSuccess && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(29,184,122,0.12)',
+                    color: '#1db87a',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-check-circle me-2"></i>
+                    {forgotSuccess}
+                  </div>
+                )}
 
                 <div className="mb-4">
                   <label className="form-label">Email Address</label>
@@ -541,15 +755,62 @@ const Login = () => {
                   Check your email for the verification code
                 </p>
 
+                {forgotError && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(229,62,62,0.12)',
+                    color: '#e53e3e',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-exclamation-circle me-2"></i>
+                    {forgotError}
+                  </div>
+                )}
+
+                {forgotSuccess && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(29,184,122,0.12)',
+                    color: '#1db87a',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-check-circle me-2"></i>
+                    {forgotSuccess}
+                  </div>
+                )}
+
                 <div className="mb-4">
                   <label className="form-label">Verification Code</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="123456"
-                    value={verifyCode}
-                    onChange={(e) => setVerifyCode(e.target.value)}
-                  />
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                    {[0, 1, 2, 3].map((index) => (
+                      <input
+                        key={index}
+                        ref={(element) => { verifyInputRefs.current[index] = element; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={verifyCode[index] || ''}
+                        onChange={(e) => updateVerifyDigit(index, e.target.value)}
+                        onKeyDown={(e) => handleVerifyKeyDown(index, e)}
+                        onPaste={handleVerifyPaste}
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          textAlign: 'center',
+                          fontSize: '22px',
+                          fontWeight: 700,
+                          border: '1.5px solid #d7dee9',
+                          borderRadius: '12px',
+                          background: '#f4f6fb',
+                          outline: 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <button
@@ -581,6 +842,34 @@ const Login = () => {
                 <p style={sectionSubtitleStyle}>
                   Enter your new password
                 </p>
+
+                {forgotError && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(229,62,62,0.12)',
+                    color: '#e53e3e',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-exclamation-circle me-2"></i>
+                    {forgotError}
+                  </div>
+                )}
+
+                {forgotSuccess && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(29,184,122,0.12)',
+                    color: '#1db87a',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                  }}>
+                    <i className="bi bi-check-circle me-2"></i>
+                    {forgotSuccess}
+                  </div>
+                )}
 
                 <div className="mb-3">
                   <label className="form-label">New Password</label>

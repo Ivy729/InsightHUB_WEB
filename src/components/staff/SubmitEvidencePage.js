@@ -123,7 +123,24 @@ const SubmitEvidencePage = () => {
           <tbody>
             <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
               <td style={{ padding: '13px 14px' }}>Research Publications</td>
-              <td style={{ padding: '13px 14px' }}><a href="#" style={{ color: '#1a3a5c', textDecoration: 'none', fontSize: '13px' }}><i className="bi bi-download me-1"></i>paper_2025.pdf</a></td>
+              <td style={{ padding: '13px 14px' }}>
+                <button
+                  type="button"
+                  style={{
+                    color: '#1a3a5c',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                  }}
+                >
+                  <i className="bi bi-download me-1"></i>paper_2025.pdf
+                </button>
+              </td>
               <td style={{ padding: '13px 14px' }}>Mar 20, 2025</td>
               <td style={{ padding: '13px 14px' }}><span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: 'rgba(29,184,122,0.12)', color: '#1db87a' }}>Approved</span></td>
             </tr>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { API_BASE_URL } from '../apiConfig';
 import '../styles/dashboard-manager.css';
 import Sidebar from '../components/ManagerSidebar';
 import Topbar from '../components/ManagerTopbar';
@@ -14,126 +16,11 @@ const DashboardManager = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [pageTitle, setPageTitle] = useState('Dashboard');
-  const [staffList, setStaffList] = useState([
-    {
-      id: 1,
-      firstName: 'Ali',
-      lastName: 'Samsuri',
-      department: 'Research Dept.',
-      email: 'ali.samsuri@university.edu.my',
-      phone: '+60123456789',
-      kpis: 5,
-      completion: 80,
-      avatarColor: '#1a3a5c'
-    },
-    {
-      id: 2,
-      firstName: 'Nora',
-      lastName: 'Rahman',
-      department: 'Teaching Dept.',
-      email: 'nora.rahman@university.edu.my',
-      phone: '+60123456790',
-      kpis: 4,
-      completion: 100,
-      avatarColor: '#6b7a99'
-    },
-    {
-      id: 3,
-      firstName: 'Kevin',
-      lastName: 'Lim',
-      department: 'Service Dept.',
-      email: 'kevin.lim@university.edu.my',
-      phone: '+60123456791',
-      kpis: 3,
-      completion: 30,
-      avatarColor: '#e8a020'
-    },
-    {
-      id: 4,
-      firstName: 'Maya',
-      lastName: 'Halim',
-      department: 'Research Dept.',
-      email: 'maya.halim@university.edu.my',
-      phone: '+60123456792',
-      kpis: 4,
-      completion: 55,
-      avatarColor: '#1db87a'
-    }
-  ]);
-
-  const [kpiList, setKpiList] = useState([
-    {
-      num: 1,
-      title: 'Research Publications',
-      desc: 'Publish 3 journal papers',
-      staff: 'Ali Samsuri',
-      dept: 'Research Dept.',
-      target: '3 papers',
-      startDate: '01/01/2025',
-      deadline: '31/12/2025',
-      status: 'in-progress'
-    },
-    {
-      num: 2,
-      title: 'Student Pass Rate',
-      desc: 'Maintain 90% pass rate',
-      staff: 'Nora Rahman',
-      dept: 'Teaching Dept.',
-      target: '90%',
-      startDate: '01/01/2025',
-      deadline: '30/06/2025',
-      status: 'achieved'
-    },
-    {
-      num: 3,
-      title: 'Community Service',
-      desc: '5 outreach programs',
-      staff: 'Kevin Lim',
-      dept: 'Service Dept.',
-      target: '5 events',
-      startDate: '01/01/2025',
-      deadline: '31/03/2025',
-      status: 'overdue'
-    },
-    {
-      num: 4,
-      title: 'Industry Grants',
-      desc: 'Secure 2 industry grants',
-      staff: 'Maya Halim',
-      dept: 'Research Dept.',
-      target: '2 grants',
-      startDate: '01/01/2025',
-      deadline: '30/09/2025',
-      status: 'in-progress'
-    }
-  ]);
-
-  const [evidenceList, setEvidenceList] = useState([
-    {
-      id: 1,
-      staff: 'Ali Samsuri',
-      kpi: 'Research Publications',
-      evidence: 'paper_2025.pdf',
-      submitted: '2 days ago',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      staff: 'Maya Halim',
-      kpi: 'Industry Grants',
-      evidence: 'grant_letter.pdf',
-      submitted: '3 days ago',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      staff: 'Nora Rahman',
-      kpi: 'Student Pass Rate',
-      evidence: 'grades_report.xlsx',
-      submitted: '1 week ago',
-      status: 'pending'
-    }
-  ]);
+  const [staffList, setStaffList] = useState([]);
+  const [kpiList, setKpiList] = useState([]);
+  const [apiError, setApiError] = useState('');
+  const [evidenceList, setEvidenceList] = useState([]);
+  const [currentUser, setCurrentUser] = useState({ name: 'Manager User', role: 'manager' });
 
   const pageTitles = {
     dashboard: 'Dashboard',
@@ -144,12 +31,68 @@ const DashboardManager = () => {
     settings: 'Settings'
   };
 
+  useEffect(() => {
+    let parsedUser = null;
+    try {
+      parsedUser = JSON.parse(localStorage.getItem('authUser') || 'null');
+    } catch (error) {
+      parsedUser = null;
+    }
+
+    if (!parsedUser) {
+      navigate('/login');
+      return;
+    }
+    if (parsedUser.role !== 'manager') {
+      navigate('/login');
+      return;
+    }
+
+    setCurrentUser({
+      name: parsedUser.name || 'Manager User',
+      role: parsedUser.role || 'manager',
+    });
+
+    const fetchKpis = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/kpis`);
+        const mappedKpis = response.data.map((kpi, index) => {
+          const targetValue = Number(kpi.target) || 0;
+          const progressValue = Number(kpi.progress) || 0;
+          const status = progressValue >= targetValue && targetValue > 0 ? 'achieved' : 'in-progress';
+
+          return {
+            num: index + 1,
+            title: kpi.title || 'Untitled KPI',
+            desc: `Progress ${progressValue}/${targetValue || '-'}`,
+            staff: kpi.owner || 'Unassigned',
+            dept: 'N/A',
+            target: String(kpi.target ?? '-'),
+            startDate: '-',
+            deadline: '-',
+            status
+          };
+        });
+
+        setKpiList(mappedKpis);
+        setApiError('');
+      } catch (error) {
+        setApiError('Failed to load KPIs from backend API.');
+        setKpiList([]);
+      }
+    };
+
+    fetchKpis();
+  }, [navigate]);
+
   const showPage = (pageId) => {
     setCurrentPage(pageId);
     setPageTitle(pageTitles[pageId] || 'Dashboard');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
     navigate('/login');
   };
 
@@ -179,10 +122,25 @@ const DashboardManager = () => {
         showPage={showPage}
         handleLogout={handleLogout}
         pendingEvidenceCount={evidenceList.length}
+        userName={currentUser.name}
+        userRole={currentUser.role}
       />
       <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <Topbar pageTitle={pageTitle} />
+        <Topbar pageTitle={pageTitle} userName={currentUser.name} />
         <div style={{ padding: '26px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          {apiError && (
+            <div style={{
+              marginBottom: '12px',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #f5c2c7',
+              background: '#f8d7da',
+              color: '#842029',
+              fontSize: '13px'
+            }}>
+              {apiError}
+            </div>
+          )}
           {renderPage()}
         </div>
       </div>

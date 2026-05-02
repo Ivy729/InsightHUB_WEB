@@ -1,55 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const DashboardPage = ({ staffList, kpiList }) => {
-  const [achievementChart, setAchievementChart] = useState(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('month');
-  const [notifications, setNotifications] = useState([]);
-
-  const achievementData = {
-    month: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-      achieved: [3, 5, 4, 6, 5, 7, 6, 8],
-      inProgress: [2, 2, 3, 2, 3, 2, 3, 2],
-      overdue: [1, 0, 1, 1, 0, 1, 0, 1]
-    },
-    quarter: {
-      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-      achieved: [12, 16, 18, 10],
-      inProgress: [5, 6, 7, 4],
-      overdue: [2, 2, 1, 3]
-    },
-    year: {
-      labels: ['2021', '2022', '2023', '2024', '2025'],
-      achieved: [30, 38, 45, 52, 48],
-      inProgress: [10, 12, 14, 16, 14],
-      overdue: [5, 4, 6, 3, 5]
-    }
-  };
-
-  const chartData = achievementData[selectedTimeframe];
+const DashboardPage = ({ kpiList }) => {
+  const totalKpis = kpiList.length;
+  const achievedKpis = kpiList.filter(k => k.status === 'achieved').length;
+  const inProgressKpis = kpiList.filter(k => k.status === 'in-progress').length;
+  const overdueKpis = kpiList.filter(k => k.status === 'overdue').length;
 
   const chartConfig = {
-    labels: chartData.labels,
+    labels: ['Current KPI Status'],
     datasets: [
       {
         label: 'Achieved',
-        data: chartData.achieved,
+        data: [achievedKpis],
         backgroundColor: '#1db87a',
         borderRadius: 6
       },
       {
         label: 'In Progress',
-        data: chartData.inProgress,
+        data: [inProgressKpis],
         backgroundColor: '#e8a020',
         borderRadius: 6
       },
       {
         label: 'Overdue',
-        data: chartData.overdue,
+        data: [overdueKpis],
         backgroundColor: '#e53e3e',
         borderRadius: 6
       }
@@ -78,11 +56,6 @@ const DashboardPage = ({ staffList, kpiList }) => {
       }
     }
   };
-
-  const totalKpis = kpiList.length;
-  const achievedKpis = kpiList.filter(k => k.status === 'achieved').length;
-  const inProgressKpis = kpiList.filter(k => k.status === 'in-progress').length;
-  const overdueKpis = kpiList.filter(k => k.status === 'overdue').length;
 
   const completionRate = totalKpis > 0 ? Math.round((achievedKpis / totalKpis) * 100) : 0;
 
@@ -115,10 +88,10 @@ const DashboardPage = ({ staffList, kpiList }) => {
         gap: '16px',
         marginBottom: '24px'
       }}>
-        <StatCard icon="bi-list-check" color="blue" value={totalKpis} label="Total KPIs" change={`+${Math.max(0, Math.floor(Math.random() * 5))} this month`} />
+        <StatCard icon="bi-list-check" color="blue" value={totalKpis} label="Total KPIs" change={totalKpis > 0 ? `${totalKpis} currently tracked` : 'No KPI yet'} />
         <StatCard icon="bi-check-circle-fill" color="green" value={achievedKpis} label="Achieved" change={`${completionRate}% completion rate`} />
-        <StatCard icon="bi-arrow-repeat" color="gold" value={inProgressKpis} label="In Progress" change="On track" />
-        <StatCard icon="bi-exclamation-triangle-fill" color="red" value={overdueKpis} label="Overdue" change="Needs attention" />
+        <StatCard icon="bi-arrow-repeat" color="gold" value={inProgressKpis} label="In Progress" change={inProgressKpis > 0 ? 'On track' : 'No active KPI'} />
+        <StatCard icon="bi-exclamation-triangle-fill" color="red" value={overdueKpis} label="Overdue" change={overdueKpis > 0 ? 'Needs attention' : 'No overdue KPI'} />
       </div>
 
       {/* TWO COLUMN LAYOUT */}
@@ -140,22 +113,7 @@ const DashboardPage = ({ staffList, kpiList }) => {
             <span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', color: '#1a2233', fontWeight: 700 }}>
               KPI Achievement Overview
             </span>
-            <select
-              value={selectedTimeframe}
-              onChange={(e) => setSelectedTimeframe(e.target.value)}
-              style={{
-                padding: '6px 10px',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                fontSize: '12px',
-                cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif"
-              }}
-            >
-              <option value="month">Month</option>
-              <option value="quarter">Quarter</option>
-              <option value="year">Year</option>
-            </select>
+            <span style={{ fontSize: '12px', color: '#6b7a99' }}>Live from current KPI list</span>
           </div>
           <div style={{ padding: '18px 22px', height: '300px' }}>
             <Bar data={chartConfig} options={chartOptions} />
@@ -295,6 +253,13 @@ const DashboardPage = ({ staffList, kpiList }) => {
                   </td>
                 </tr>
               ))}
+              {kpiList.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '24px 14px', textAlign: 'center', color: '#6b7a99', fontSize: '14px' }}>
+                    No KPI data yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

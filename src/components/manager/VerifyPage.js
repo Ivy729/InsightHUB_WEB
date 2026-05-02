@@ -95,9 +95,22 @@ const VerifyPage = ({ evidenceList, setEvidenceList }) => {
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.staff}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.kpi}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>
-                  <a href="#" style={{ color: '#1a3a5c', textDecoration: 'none', fontSize: '13px' }}>
+                  <button
+                    type="button"
+                    style={{
+                      color: '#1a3a5c',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      textAlign: 'left',
+                    }}
+                  >
                     <i className="bi bi-download me-1"></i>{item.evidence}
-                  </a>
+                  </button>
                 </td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.submitted}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>

@@ -1,7 +1,13 @@
 import React from 'react';
 
-const DashboardPage = () => (
-  <div>
+const DashboardPage = ({ userName = 'Staff User', kpis = [] }) => {
+  const totalKpis = kpis.length;
+  const achievedKpis = kpis.filter((kpi) => kpi.status === 'achieved').length;
+  const inProgressKpis = kpis.filter((kpi) => kpi.status === 'in-progress').length;
+  const overdueKpis = kpis.filter((kpi) => kpi.status === 'overdue').length;
+
+  return (
+    <div>
     <div style={{
       background: '#1a3a5c',
       borderRadius: '16px',
@@ -17,16 +23,20 @@ const DashboardPage = () => (
       <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', background: 'rgba(232,160,32,0.12)', borderRadius: '50%' }}></div>
       <div>
         <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>Good morning,</div>
-        <div style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', color: 'white', fontWeight: 700, marginBottom: '6px' }}>Ali Samsuri 👋</div>
-        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>You have <strong style={{ color: '#e8a020' }}>2 KPIs</strong> due this month. Keep it up!</div>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', color: 'white', fontWeight: 700, marginBottom: '6px' }}>{userName} 👋</div>
+        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
+          {totalKpis === 0
+            ? 'No KPIs assigned yet. Your dashboard is ready.'
+            : `You have ${totalKpis} assigned KPI${totalKpis > 1 ? 's' : ''}. Keep it up!`}
+        </div>
       </div>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-      <StatCard icon="bi-list-check" color="blue" value="5" label="Total KPIs Assigned" />
-      <StatCard icon="bi-check-circle-fill" color="green" value="2" label="Achieved" />
-      <StatCard icon="bi-arrow-repeat" color="gold" value="2" label="In Progress" />
-      <StatCard icon="bi-exclamation-triangle-fill" color="red" value="1" label="Overdue" />
+      <StatCard icon="bi-list-check" color="blue" value={String(totalKpis)} label="Total KPIs Assigned" />
+      <StatCard icon="bi-check-circle-fill" color="green" value={String(achievedKpis)} label="Achieved" />
+      <StatCard icon="bi-arrow-repeat" color="gold" value={String(inProgressKpis)} label="In Progress" />
+      <StatCard icon="bi-exclamation-triangle-fill" color="red" value={String(overdueKpis)} label="Overdue" />
     </div>
 
     <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -44,17 +54,28 @@ const DashboardPage = () => (
           overflowX: 'hidden'
         }}
       >
-        {[
-          { title: 'Research Publications', category: 'Research', deadline: 'Dec 2025', progress: 67, status: 'in-progress', achievement: '2 of 3 papers published' },
-          { title: 'Student Pass Rate', category: 'Teaching', deadline: 'Jun 2025', progress: 100, status: 'achieved', achievement: 'Achieved: 95% pass rate' },
-          { title: 'Community Service', category: 'Service', deadline: 'Mar 2025', progress: 30, status: 'overdue', achievement: '1 of 5 events done' }
-        ].map((kpi, idx) => (
-          <KpiCard key={idx} {...kpi} />
-        ))}
+        {kpis.length === 0 ? (
+          <div style={{ padding: '16px', border: '1px dashed #d5dbe7', borderRadius: '10px', color: '#6b7a99', fontSize: '14px' }}>
+            No KPI assigned yet.
+          </div>
+        ) : (
+          kpis.map((kpi) => (
+            <KpiCard
+              key={kpi.id}
+              title={kpi.title}
+              category={kpi.category || 'General'}
+              deadline={kpi.deadline || '-'}
+              progress={Number(kpi.progress) || 0}
+              status={kpi.status}
+              achievement={`Target: ${kpi.target ?? '-'}`}
+            />
+          ))
+        )}
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const StatCard = ({ icon, color, value, label }) => {
   const colors = {

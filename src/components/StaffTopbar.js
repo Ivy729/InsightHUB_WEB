@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const StaffTopbar = ({ pageTitle }) => {
+const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
   const notifWrapRef = useRef(null);
@@ -20,6 +20,12 @@ const StaffTopbar = ({ pageTitle }) => {
   };
 
   const hasUnread = notifItems.some(n => n.unread);
+  const initials = userName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join('') || 'SU';
 
   const toggleNotif = () => {
     setShowNotif(!showNotif);
@@ -246,7 +252,7 @@ const StaffTopbar = ({ pageTitle }) => {
           color: 'white',
           cursor: 'pointer'
         }}>
-          AS
+          {initials}
         </div>
       </div>
     </div>

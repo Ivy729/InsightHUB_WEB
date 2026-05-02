@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const ManagerTopbar = ({ pageTitle }) => {
+const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
   const notifWrapRef = useRef(null);
@@ -56,6 +56,12 @@ const ManagerTopbar = ({ pageTitle }) => {
   };
 
   const hasUnread = notifications.some(n => !n.read);
+  const initials = userName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join('') || 'MU';
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -275,7 +281,7 @@ const ManagerTopbar = ({ pageTitle }) => {
           color: 'white',
           cursor: 'pointer'
         }}>
-          JD
+          {initials}
         </div>
       </div>
     </div>
