@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const User = require("../models/User");
+const { authenticateJWT } = require("../middleware/auth");
 
 const router = express.Router();
 const RESET_CODE_TTL_MS = 10 * 60 * 1000;
@@ -52,7 +53,8 @@ const sendResetCodeEmail = async (toEmail, code) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone, position, department, profilePhoto } =
+      req.body;
 
     if (!name || !email || !password) {
       return res
@@ -72,6 +74,10 @@ router.post("/register", async (req, res) => {
       email,
       password: hashedPassword,
       role: role || "staff",
+      phone: phone || "",
+      position: position || "",
+      department: department || "",
+      profilePhoto: profilePhoto || "",
     });
 
     const token = jwt.sign(
@@ -88,6 +94,10 @@ router.post("/register", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone || "",
+        position: user.position || "",
+        department: user.department || "",
+        profilePhoto: user.profilePhoto || "",
       },
     });
   } catch (error) {
@@ -129,10 +139,89 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone || "",
+        position: user.position || "",
+        department: user.department || "",
+        profilePhoto: user.profilePhoto || "",
       },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/me", authenticateJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone || "",
+      position: user.position || "",
+      department: user.department || "",
+      profilePhoto: user.profilePhoto || "",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+router.put("/me", authenticateJWT, async (req, res) => {
+  try {
+    const { name, email, phone, position, department, profilePhoto } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ message: "Name and email are required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existingEmailUser = await User.findOne({
+      email: normalizedEmail,
+      _id: { $ne: req.user.userId },
+    });
+    if (existingEmailUser) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+
+    const updates = {
+      name: String(name).trim(),
+      email: normalizedEmail,
+      phone: String(phone || "").trim(),
+      position: String(position || "").trim(),
+      department: String(department || "").trim(),
+      profilePhoto: String(profilePhoto || "").trim(),
+    };
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.userId, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        phone: updatedUser.phone || "",
+        position: updatedUser.position || "",
+        department: updatedUser.department || "",
+        profilePhoto: updatedUser.profilePhoto || "",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 

@@ -1,15 +1,121 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../../apiConfig';
 
 const ProfilePage = () => {
-  const [firstName, setFirstName] = useState('John');
-  const [lastName, setLastName] = useState('Doe');
-  const [email, setEmail] = useState('john.doe@university.edu.my');
-  const [phone, setPhone] = useState('+60123456789');
-  const [position, setPosition] = useState('Manager');
-  const [department, setDepartment] = useState('Management Office');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [position, setPosition] = useState('');
+  const [department, setDepartment] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
-  const handleSave = () => {
-    alert('Profile changes saved!');
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  const initials = useMemo(() => {
+    if (!fullName) return 'U';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }, [fullName]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setError('Missing login token. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+
+        const user = response.data;
+        const nameParts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+        setFirstName(nameParts[0] || '');
+        setLastName(nameParts.slice(1).join(' '));
+        setEmail(user.email || '');
+        setPhone(user.phone || '');
+        setPosition(user.position || '');
+        setDepartment(user.department || '');
+        setProfilePhoto(user.profilePhoto || '');
+        setError('');
+      } catch (requestError) {
+        setError('Failed to load profile information.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handlePhotoSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Value = String(reader.result || '');
+      setProfilePhoto(base64Value);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setError('Missing login token. Please sign in again.');
+      return;
+    }
+    if (!firstName.trim() || !email.trim()) {
+      setError('First name and email are required.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/api/auth/me`,
+        {
+          name: fullName,
+          email,
+          phone,
+          position,
+          department,
+          profilePhoto,
+        },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      const updatedUser = response.data.user;
+      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      setMessage('Profile changes saved successfully.');
+    } catch (requestError) {
+      if (requestError.response?.status === 409) {
+        setError('Email already in use. Please use another email.');
+      } else if (requestError.response?.status === 413) {
+        setError('Profile photo is too large. Please choose a smaller image.');
+      } else {
+        setError(requestError.response?.data?.message || 'Failed to save profile changes.');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -25,32 +131,83 @@ const ProfilePage = () => {
         </span>
       </div>
 
+      {(error || message) && (
+        <div style={{ padding: '16px 28px 0 28px' }}>
+          {error && (
+            <div style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #f5c2c7',
+              background: '#f8d7da',
+              color: '#842029',
+              fontSize: '13px'
+            }}>
+              {error}
+            </div>
+          )}
+          {message && (
+            <div style={{
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #badbcc',
+              background: '#d1e7dd',
+              color: '#0f5132',
+              fontSize: '13px'
+            }}>
+              {message}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ padding: '28px', display: 'flex', gap: '48px', alignItems: 'flex-start' }}>
         {/* LEFT: Avatar */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '180px' }}>
-          <div style={{
-            width: '100px',
-            height: '100px',
-            borderRadius: '50%',
-            background: '#1a3a5c',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '40px',
-            color: 'white',
-            fontWeight: 700,
-            marginBottom: '12px',
-            cursor: 'pointer'
-          }}>
-            JD
-          </div>
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt="Profile"
+              style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                marginBottom: '12px',
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              background: '#1a3a5c',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '40px',
+              color: 'white',
+              fontWeight: 700,
+              marginBottom: '12px',
+              cursor: 'pointer'
+            }}>
+              {initials}
+            </div>
+          )}
           <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px', textAlign: 'center' }}>
-            Dr. {firstName} {lastName}
+            {fullName || 'Manager User'}
           </div>
           <div style={{ color: '#6b7a99', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>
-            {position}
+            {position || 'Manager'}
           </div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handlePhotoSelect}
+            style={{ display: 'none' }}
+          />
           <button
+            onClick={() => fileInputRef.current?.click()}
             style={{
               background: '#1a3a5c',
               color: 'white',
@@ -78,6 +235,7 @@ const ProfilePage = () => {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -96,6 +254,7 @@ const ProfilePage = () => {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -114,6 +273,7 @@ const ProfilePage = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -132,6 +292,7 @@ const ProfilePage = () => {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -150,6 +311,7 @@ const ProfilePage = () => {
                 type="text"
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -168,6 +330,7 @@ const ProfilePage = () => {
                 type="text"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -182,6 +345,7 @@ const ProfilePage = () => {
 
           <button
             onClick={handleSave}
+            disabled={loading || saving}
             style={{
               marginTop: '20px',
               background: '#1a3a5c',
@@ -198,7 +362,7 @@ const ProfilePage = () => {
               gap: '6px'
             }}
           >
-            <i className="bi bi-check-lg"></i> Save Changes
+            <i className="bi bi-check-lg"></i> {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

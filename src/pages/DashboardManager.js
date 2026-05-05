@@ -19,6 +19,7 @@ const DashboardManager = () => {
   const [staffList, setStaffList] = useState([]);
   const [kpiList, setKpiList] = useState([]);
   const [apiError, setApiError] = useState('');
+  const [evidenceError, setEvidenceError] = useState('');
   const [evidenceList, setEvidenceList] = useState([]);
   const [currentUser, setCurrentUser] = useState({ name: 'Manager User', role: 'manager' });
 
@@ -53,6 +54,8 @@ const DashboardManager = () => {
       role: parsedUser.role || 'manager',
     });
 
+    const authToken = localStorage.getItem('authToken');
+
     const fetchKpis = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/kpis`);
@@ -82,8 +85,73 @@ const DashboardManager = () => {
       }
     };
 
+    const fetchEvidenceQueue = async () => {
+      if (!authToken) {
+        setEvidenceList([]);
+        setEvidenceError('Missing login token. Please sign in again.');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/manager/evidence-queue`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+
+        const mappedEvidence = response.data.map((item) => ({
+          id: item._id,
+          staff: item.staffId?.name || 'Unknown Staff',
+          kpi: item.kpiId?.title || 'Unknown KPI',
+          evidence: item.fileUrl || 'No file URL',
+          submitted: item.submittedAt
+            ? new Date(item.submittedAt).toLocaleDateString()
+            : '-',
+          status: item.status,
+        }));
+
+        setEvidenceList(mappedEvidence);
+        setEvidenceError('');
+      } catch (error) {
+        setEvidenceList([]);
+        setEvidenceError('Failed to load evidence queue from backend API.');
+      }
+    };
+
     fetchKpis();
+    fetchEvidenceQueue();
   }, [navigate]);
+
+  const handleVerifyEvidence = async (id, action) => {
+    const authToken = localStorage.getItem('authToken');
+    const status = action === 'Approved' ? 'approved' : 'rejected';
+
+    if (!authToken) {
+      setEvidenceError('Missing login token. Please sign in again.');
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/manager/verify-evidence/${id}`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      setEvidenceList((previous) =>
+        previous
+          .map((item) => (item.id === id ? { ...item, status } : item))
+          .filter((item) => item.status === 'pending')
+      );
+      setEvidenceError('');
+    } catch (error) {
+      setEvidenceError('Failed to verify evidence. Please try again.');
+    }
+  };
 
   const showPage = (pageId) => {
     setCurrentPage(pageId);
@@ -103,7 +171,13 @@ const DashboardManager = () => {
       case 'kpiManage':
         return <KpiManagePage kpiList={kpiList} setKpiList={setKpiList} staffList={staffList} />;
       case 'verify':
-        return <VerifyPage evidenceList={evidenceList} setEvidenceList={setEvidenceList} />;
+        return (
+          <VerifyPage
+            evidenceList={evidenceList}
+            onVerifyEvidence={handleVerifyEvidence}
+            evidenceError={evidenceError}
+          />
+        );
       case 'staff':
         return <StaffPage staffList={staffList} setStaffList={setStaffList} kpiList={kpiList} setKpiList={setKpiList} />;
       case 'profile':
@@ -139,6 +213,19 @@ const DashboardManager = () => {
               fontSize: '13px'
             }}>
               {apiError}
+            </div>
+          )}
+          {evidenceError && (
+            <div style={{
+              marginBottom: '12px',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #f5c2c7',
+              background: '#f8d7da',
+              color: '#842029',
+              fontSize: '13px'
+            }}>
+              {evidenceError}
             </div>
           )}
           {renderPage()}

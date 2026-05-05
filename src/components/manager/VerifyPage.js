@@ -1,11 +1,9 @@
 import React from 'react';
 
-const VerifyPage = ({ evidenceList, setEvidenceList }) => {
+const VerifyPage = ({ evidenceList, onVerifyEvidence, evidenceError }) => {
 
   const verifyEvidence = (id, action) => {
-    setEvidenceList(evidenceList.map(e =>
-      e.id === id ? { ...e, status: action === 'Approved' ? 'approved' : 'rejected' } : e
-    ).filter(e => e.status === 'pending'));
+    onVerifyEvidence(id, action);
   };
 
   return (
@@ -161,7 +159,7 @@ const VerifyPage = ({ evidenceList, setEvidenceList }) => {
           color: '#6b7a99',
           fontSize: '14px'
         }}>
-          No pending evidence to verify
+          {evidenceError || 'No pending evidence to verify'}
         </div>
       )}
     </div>
