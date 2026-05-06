@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
+import { api } from '../apiClient';
 import '../styles/dashboard-staff.css';
 import StaffSidebar from '../components/StaffSidebar';
 import StaffTopbar from '../components/StaffTopbar';
@@ -18,8 +18,9 @@ const DashboardStaff = () => {
   const [pageTitle, setPageTitle] = useState('Dashboard');
   const [selectedKpiId, setSelectedKpiId] = useState(null);
   const [staffKpis, setStaffKpis] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [apiError, setApiError] = useState('');
-  const [currentUser, setCurrentUser] = useState({ name: 'Staff User', role: 'staff', email: '' });
+  const [currentUser, setCurrentUser] = useState({ name: 'Staff User', role: 'staff', email: '', avatarPath: '' });
 
   const pageTitles = {
     dashboard: 'Dashboard',
@@ -51,16 +52,33 @@ const DashboardStaff = () => {
       name: parsedUser.name || 'Staff User',
       role: parsedUser.role || 'staff',
       email: parsedUser.email || '',
+      avatarPath: parsedUser.avatarPath || '',
     });
 
-    const fetchKpis = async () => {
+    const fetchUserAndKpis = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/kpis`);
+        const [meRes, kpisRes, notifRes] = await Promise.all([
+          api.get(`/api/users/me`),
+          api.get(`/api/kpis`),
+          api.get(`/api/notifications/mine`),
+        ]);
 
-        const normalizedName = (parsedUser.name || '').trim().toLowerCase();
-        const normalizedEmail = (parsedUser.email || '').trim().toLowerCase();
+        const me = meRes.data?.user || null;
+        if (me) {
+          const nextUser = {
+            name: me.name || parsedUser.name || 'Staff User',
+            role: me.role || parsedUser.role || 'staff',
+            email: me.email || parsedUser.email || '',
+            avatarPath: me.avatarPath || parsedUser.avatarPath || '',
+          };
+          setCurrentUser(nextUser);
+          localStorage.setItem('authUser', JSON.stringify(nextUser));
+        }
 
-        const userKpis = response.data
+        const normalizedName = ((me?.name || parsedUser.name) || '').trim().toLowerCase();
+        const normalizedEmail = ((me?.email || parsedUser.email) || '').trim().toLowerCase();
+
+        const userKpis = (kpisRes.data || [])
           .filter((kpi) => {
             const owner = (kpi.owner || '').trim().toLowerCase();
             return owner && (owner === normalizedName || owner === normalizedEmail);
@@ -78,13 +96,14 @@ const DashboardStaff = () => {
               category: 'General',
               target: String(kpi.target ?? '-'),
               progress,
-              deadline: '-',
+              deadline: kpi.deadline ? new Date(kpi.deadline).toLocaleDateString() : '-',
               status,
             };
           });
 
         setStaffKpis(userKpis);
         setSelectedKpiId(userKpis[0]?.id || null);
+        setNotifications(Array.isArray(notifRes.data) ? notifRes.data : []);
         setApiError('');
       } catch (error) {
         setApiError('Failed to load KPI data from backend.');
@@ -93,7 +112,9 @@ const DashboardStaff = () => {
       }
     };
 
-    fetchKpis();
+    fetchUserAndKpis();
+    const interval = setInterval(fetchUserAndKpis, 60000);
+    return () => clearInterval(interval);
   }, [navigate]);
 
   const showPage = (pageId) => {
@@ -128,9 +149,22 @@ const DashboardStaff = () => {
           />
         );
       case 'submitEvidence':
-        return <SubmitEvidencePage />;
+        return <SubmitEvidencePage kpis={staffKpis} />;
       case 'profile':
-        return <StaffProfilePage />;
+        return (
+          <StaffProfilePage
+            onUserUpdated={(nextAuthUser) => {
+              if (!nextAuthUser) return;
+              setCurrentUser((prev) => ({
+                ...prev,
+                name: nextAuthUser.name || prev.name,
+                role: nextAuthUser.role || prev.role,
+                email: nextAuthUser.email || prev.email,
+                avatarPath: nextAuthUser.avatarPath || prev.avatarPath,
+              }));
+            }}
+          />
+        );
       case 'settings':
         return <StaffSettingsPage />;
       default:
@@ -140,9 +174,21 @@ const DashboardStaff = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <StaffSidebar currentPage={currentPage} showPage={showPage} handleLogout={handleLogout} userName={currentUser.name} userRole={currentUser.role} />
+      <StaffSidebar
+        currentPage={currentPage}
+        showPage={showPage}
+        handleLogout={handleLogout}
+        userName={currentUser.name}
+        userRole={currentUser.role}
+        avatarPath={currentUser.avatarPath}
+      />
       <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <StaffTopbar pageTitle={pageTitle} userName={currentUser.name} />
+        <StaffTopbar
+          pageTitle={pageTitle}
+          userName={currentUser.name}
+          avatarPath={currentUser.avatarPath}
+          notifications={notifications}
+        />
         <div style={{ padding: '26px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {apiError && (
             <div style={{

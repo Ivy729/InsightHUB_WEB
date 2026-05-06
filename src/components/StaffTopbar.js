@@ -1,22 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { API_BASE_URL } from '../apiConfig';
+import { api } from '../apiClient';
 
-const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
+const StaffTopbar = ({ pageTitle, userName = 'Staff User', avatarPath = '', notifications = [] }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
   const notifWrapRef = useRef(null);
-  const [notifItems, setNotifItems] = useState([
-    { id: 1, type: 'success', icon: 'bi-check-lg', text: 'Evidence Approved', sub: 'Research Publications · 2h ago', unread: true },
-    { id: 2, type: 'danger', icon: 'bi-exclamation-triangle', text: 'KPI Overdue', sub: 'Community Service · Due Mar 2025', unread: true },
-    { id: 3, type: 'warning', icon: 'bi-upload', text: 'Evidence Submitted', sub: 'Student Pass Rate · 1d ago', unread: false },
-    { id: 4, type: 'primary', icon: 'bi-pencil', text: 'Progress Updated', sub: 'Research Publications · 3d ago', unread: false }
-  ]);
+  const [notifItems, setNotifItems] = useState([]);
+
+  useEffect(() => {
+    setNotifItems(Array.isArray(notifications) ? notifications : []);
+  }, [notifications]);
 
   const markRead = (item) => {
-    setNotifItems(notifItems.map(n => n.id === item.id ? { ...n, unread: false } : n));
+    const id = item?._id || item?.id;
+    setNotifItems((prev) => prev.map((n) => ((n._id || n.id) === id ? { ...n, unread: false } : n)));
+    if (item?._id) {
+      api.post(`/api/notifications/${item._id}/read`).catch(() => {});
+    }
   };
 
   const markAllRead = () => {
-    setNotifItems(notifItems.map(n => ({ ...n, unread: false })));
+    setNotifItems((prev) => prev.map((n) => ({ ...n, unread: false })));
+    api.post(`/api/notifications/read-all`).catch(() => {});
   };
 
   const hasUnread = notifItems.some(n => n.unread);
@@ -46,6 +52,17 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
       primary: { bg: 'rgba(26,58,92,0.2)', color: '#1a3a5c' }
     };
     return colors[type] || colors.primary;
+  };
+
+  const getIconClass = (type, text) => {
+    const t = String(text || '').toLowerCase();
+    if (t.includes('due')) return 'bi-calendar-event';
+    if (t.includes('overdue')) return 'bi-exclamation-triangle';
+    if (t.includes('evidence')) return 'bi-upload';
+    if (type === 'success') return 'bi-check-lg';
+    if (type === 'danger') return 'bi-exclamation-triangle';
+    if (type === 'warning') return 'bi-clock-history';
+    return 'bi-bell';
   };
 
   useEffect(() => {
@@ -153,11 +170,17 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
               </button>
             </div>
 
+            {notifItems.length === 0 && (
+              <div style={{ padding: '14px 18px', fontSize: '13px', color: '#6b7a99' }}>
+                No notifications yet.
+              </div>
+            )}
             {notifItems.map(item => {
+              const rowId = item?._id || item?.id;
               const color = getColorClass(item.type);
               return (
                 <div
-                  key={item.id}
+                  key={rowId}
                   style={{
                     padding: '12px 18px',
                     borderBottom: '1px solid #e2e8f0',
@@ -169,7 +192,7 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
                   }}
                 >
                   <div
-                    onClick={() => toggleExpandedNotif(item.id)}
+                    onClick={() => toggleExpandedNotif(rowId)}
                     style={{
                       cursor: 'pointer',
                       display: 'flex',
@@ -188,7 +211,7 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
                       justifyContent: 'center',
                       flexShrink: 0
                     }}>
-                      <i className={`bi ${item.icon}`} style={{ color: color.color, fontSize: '14px' }}></i>
+                      <i className={`bi ${getIconClass(item.type, item.text)}`} style={{ color: color.color, fontSize: '14px' }}></i>
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{
@@ -210,7 +233,7 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
                       }}></div>
                     )}
                   </div>
-                  {expandedNotifId === item.id && (
+                  {expandedNotifId === rowId && (
                     <div style={{ paddingLeft: '46px' }}>
                       {item.unread && (
                         <button
@@ -250,9 +273,18 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
           fontWeight: 700,
           fontSize: '14px',
           color: 'white',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          overflow: 'hidden'
         }}>
-          {initials}
+          {avatarPath ? (
+            <img
+              src={`${API_BASE_URL}${avatarPath}`}
+              alt="Avatar"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            initials
+          )}
         </div>
       </div>
     </div>

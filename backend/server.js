@@ -5,6 +5,9 @@ const path = require("path");
 const connectDB = require("./config/db");
 const kpiRoutes = require("./routes/kpiRoutes");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const evidenceRoutes = require("./routes/evidenceRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -25,8 +28,12 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/evidence", evidenceRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });

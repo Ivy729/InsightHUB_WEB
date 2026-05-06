@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { api } from '../../apiClient';
 
 const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpis }) => {
-  const selectedKpi = kpis.find((kpi) => kpi.id === selectedKpiId) || kpis[0];
+  const selectedKpi = useMemo(
+    () => kpis.find((kpi) => kpi.id === selectedKpiId) || kpis[0],
+    [kpis, selectedKpiId]
+  );
   const [progress, setProgress] = useState(selectedKpi ? selectedKpi.progress : 0);
+  const [saving, setSaving] = useState(false);
 
   if (kpis.length === 0) {
     return (
@@ -18,25 +23,39 @@ const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpi
   }
 
   const handleKpiChange = (e) => {
-    const nextId = Number(e.target.value);
+    const nextId = String(e.target.value);
     setSelectedKpiId(nextId);
     const nextKpi = kpis.find((k) => k.id === nextId);
     setProgress(nextKpi ? nextKpi.progress : 0);
   };
 
-  const saveProgress = () => {
+  const saveProgress = async () => {
     if (!selectedKpi) return;
     const normalizedProgress = Number(progress);
-    setKpis((prev) =>
-      prev.map((kpi) => {
-        if (kpi.id !== selectedKpi.id) return kpi;
-        let status = 'in-progress';
-        if (normalizedProgress >= 100) status = 'achieved';
-        else if (normalizedProgress < 50) status = 'overdue';
-        return { ...kpi, progress: normalizedProgress, status };
-      })
-    );
-    alert('Progress updated successfully.');
+    setSaving(true);
+    try {
+      await api.put(`/api/kpis/${selectedKpi.id}/progress`, {
+        progress: normalizedProgress,
+      });
+
+      setKpis((prev) =>
+        prev.map((kpi) => {
+          if (kpi.id !== selectedKpi.id) return kpi;
+          let status = 'in-progress';
+          if (normalizedProgress >= 100) status = 'achieved';
+          else if (normalizedProgress < 50) status = 'overdue';
+          return { ...kpi, progress: normalizedProgress, status };
+        })
+      );
+      alert('Progress updated successfully.');
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+          'Failed to save progress. Please try again.'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -80,7 +99,27 @@ const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpi
             <input type="date" defaultValue="2025-03-24" style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
           </div>
 
-          <button onClick={saveProgress} style={{ background: '#1a3a5c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '6px' }}><i className="bi bi-check-circle"></i> Save Progress</button>
+          <button
+            onClick={saveProgress}
+            disabled={saving}
+            style={{
+              background: '#1a3a5c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            <i className="bi bi-check-circle"></i> {saving ? 'Saving…' : 'Save Progress'}
+          </button>
         </div>
       </div>
 

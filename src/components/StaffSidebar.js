@@ -1,6 +1,7 @@
 import React from 'react';
+import { API_BASE_URL } from '../apiConfig';
 
-const StaffSidebar = ({ currentPage, showPage, handleLogout, userName = 'Staff User', userRole = 'staff' }) => {
+const StaffSidebar = ({ currentPage, showPage, handleLogout, userName = 'Staff User', userRole = 'staff', avatarPath = '' }) => {
   const initials = userName
     .split(' ')
     .filter(Boolean)
@@ -145,7 +146,15 @@ const StaffSidebar = ({ currentPage, showPage, handleLogout, userName = 'Staff U
             color: 'white',
             flexShrink: 0
           }}>
-            {initials}
+            {avatarPath ? (
+              <img
+                src={`${API_BASE_URL}${avatarPath}`}
+                alt="Avatar"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              />
+            ) : (
+              initials
+            )}
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>

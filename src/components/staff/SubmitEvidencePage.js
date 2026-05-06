@@ -1,9 +1,38 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../../apiClient';
+import { API_BASE_URL } from '../../apiConfig';
 
-const SubmitEvidencePage = () => {
+const SubmitEvidencePage = ({ kpis = [] }) => {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  const [selectedKpiId, setSelectedKpiId] = useState('');
+  const [manualKpiTitle, setManualKpiTitle] = useState('');
+  const [evidenceType, setEvidenceType] = useState('Document (PDF/Word)');
+  const [notes, setNotes] = useState('');
+  const [history, setHistory] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const kpiOptions = useMemo(() => kpis || [], [kpis]);
+
+  useEffect(() => {
+    if (!selectedKpiId && kpiOptions.length > 0) {
+      setSelectedKpiId(kpiOptions[0].id);
+    }
+  }, [kpiOptions, selectedKpiId]);
+
+  const loadHistory = async () => {
+    try {
+      const res = await api.get('/api/evidence/mine');
+      setHistory(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      setHistory([]);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
 
   const validateAndSetFile = (selectedFile) => {
     if (!selectedFile) return;
@@ -27,15 +56,53 @@ const SubmitEvidencePage = () => {
     if (files.length > 0) validateAndSetFile(files[0]);
   };
 
-  const handleSubmitEvidence = () => {
+  const handleSubmitEvidence = async () => {
     if (!file) {
       alert('Please upload a file before submitting evidence.');
       return;
     }
-    alert(`Evidence submitted: ${file.name}`);
-    setFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    const hasAssignedKpis = kpiOptions.length > 0;
+    const selectedKpi = hasAssignedKpis
+      ? kpiOptions.find((k) => k.id === selectedKpiId)
+      : null;
+
+    const kpiTitleToSubmit = hasAssignedKpis
+      ? (selectedKpi?.title || '')
+      : manualKpiTitle.trim();
+
+    if (!kpiTitleToSubmit) {
+      alert(hasAssignedKpis ? 'Please select a KPI before submitting evidence.' : 'Please enter the KPI title before submitting evidence.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const form = new FormData();
+      if (selectedKpi?.id) form.append('kpiId', selectedKpi.id);
+      form.append('kpiTitle', kpiTitleToSubmit);
+      form.append('evidenceType', evidenceType);
+      form.append('notes', notes);
+      form.append('file', file);
+
+      await api.post('/api/evidence', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      alert('Evidence submitted successfully.');
+      setFile(null);
+      setNotes('');
+      setManualKpiTitle('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      await loadHistory();
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+          'Failed to submit evidence. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -46,16 +113,36 @@ const SubmitEvidencePage = () => {
         <div style={{ padding: '18px 22px' }}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>KPI</label>
-            <select style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
-              <option>Research Publications</option>
-              <option>Student Pass Rate</option>
-              <option>Community Service</option>
-            </select>
+            {kpiOptions.length === 0 ? (
+              <input
+                type="text"
+                value={manualKpiTitle}
+                onChange={(e) => setManualKpiTitle(e.target.value)}
+                placeholder="Enter KPI title (no KPI assigned)"
+                style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}
+              />
+            ) : (
+              <select
+                value={selectedKpiId}
+                onChange={(e) => setSelectedKpiId(e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}
+              >
+                {kpiOptions.map((kpi) => (
+                  <option key={kpi.id} value={kpi.id}>
+                    {kpi.title}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Evidence Type</label>
-            <select style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+            <select
+              value={evidenceType}
+              onChange={(e) => setEvidenceType(e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}
+            >
               <option>Document (PDF/Word)</option>
               <option>Image</option>
               <option>Certificate</option>
@@ -105,10 +192,35 @@ const SubmitEvidencePage = () => {
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Description / Notes</label>
-            <textarea placeholder="Describe this evidence briefly..." style={{ width: '100%', minHeight: '80px', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', resize: 'none' }} />
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Describe this evidence briefly..."
+              style={{ width: '100%', minHeight: '80px', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', resize: 'none' }}
+            />
           </div>
 
-          <button onClick={handleSubmitEvidence} style={{ background: '#1a3a5c', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '6px' }}><i className="bi bi-upload"></i> Submit Evidence</button>
+          <button
+            onClick={handleSubmitEvidence}
+            disabled={submitting}
+            style={{
+              background: '#1a3a5c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              fontFamily: "'DM Sans', sans-serif",
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: submitting ? 0.7 : 1,
+            }}
+          >
+            <i className="bi bi-upload"></i> {submitting ? 'Submitting…' : 'Submit Evidence'}
+          </button>
         </div>
       </div>
 
@@ -121,29 +233,64 @@ const SubmitEvidencePage = () => {
             </tr>
           </thead>
           <tbody>
-            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-              <td style={{ padding: '13px 14px' }}>Research Publications</td>
-              <td style={{ padding: '13px 14px' }}>
-                <button
-                  type="button"
-                  style={{
-                    color: '#1a3a5c',
-                    textDecoration: 'none',
-                    fontSize: '13px',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    textAlign: 'left',
-                  }}
-                >
-                  <i className="bi bi-download me-1"></i>paper_2025.pdf
-                </button>
-              </td>
-              <td style={{ padding: '13px 14px' }}>Mar 20, 2025</td>
-              <td style={{ padding: '13px 14px' }}><span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: 'rgba(29,184,122,0.12)', color: '#1db87a' }}>Approved</span></td>
-            </tr>
+            {history.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ padding: '18px 14px', color: '#6b7a99', fontSize: '13px' }}>
+                  No submissions yet.
+                </td>
+              </tr>
+            ) : (
+              history.map((row) => {
+                const created = row.createdAt ? new Date(row.createdAt) : null;
+                const dateLabel = created
+                  ? created.toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: '2-digit',
+                    })
+                  : '-';
+
+                const status = row.status || 'Pending';
+                const statusStyle =
+                  status === 'Approved'
+                    ? { background: 'rgba(29,184,122,0.12)', color: '#1db87a' }
+                    : status === 'Rejected'
+                      ? { background: 'rgba(229,62,62,0.1)', color: '#e53e3e' }
+                      : { background: 'rgba(232,160,32,0.12)', color: '#f5a623' };
+
+                const fileName = row.file?.originalName || 'file';
+                const downloadUrl = row.file?.path
+                  ? `${API_BASE_URL}${row.file.path}`
+                  : null;
+
+                return (
+                  <tr key={row._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '13px 14px' }}>{row.kpiTitle}</td>
+                    <td style={{ padding: '13px 14px' }}>
+                      {downloadUrl ? (
+                        <a
+                          href={downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#1a3a5c', textDecoration: 'none', fontSize: '13px' }}
+                        >
+                          <i className="bi bi-download me-1"></i>
+                          {fileName}
+                        </a>
+                      ) : (
+                        <span style={{ color: '#6b7a99', fontSize: '13px' }}>{fileName}</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '13px 14px' }}>{dateLabel}</td>
+                    <td style={{ padding: '13px 14px' }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, ...statusStyle }}>
+                        {status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

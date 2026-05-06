@@ -6,6 +6,7 @@ const kpiSchema = new mongoose.Schema(
     target: { type: Number, required: true },
     progress: { type: Number, default: 0 },
     owner: { type: String, default: "staff" },
+    deadline: { type: Date, default: null },
   },
   { timestamps: true }
 );

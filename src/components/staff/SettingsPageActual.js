@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../../apiClient';
 
 const SettingsPage = () => {
   const [use24Hour, setUse24Hour] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/api/users/me');
+        const timeFormat = res.data?.user?.settings?.timeFormat || '12h';
+        setUse24Hour(timeFormat === '24h');
+      } catch (error) {
+        // ignore, default stays
+      }
+    };
+    load();
+  }, []);
 
   const getTimePreview = () => {
     const now = new Date();
@@ -15,7 +31,24 @@ const SettingsPage = () => {
     }
   };
 
-  const handleUpdatePassword = () => {
+  const saveTimeFormat = async (use24) => {
+    setUse24Hour(use24);
+    setSavingPrefs(true);
+    try {
+      await api.put('/api/users/me/settings', {
+        timeFormat: use24 ? '24h' : '12h',
+      });
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+          'Failed to save time format. Please try again.'
+      );
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       alert('Please fill in all password fields');
       return;
@@ -31,10 +64,24 @@ const SettingsPage = () => {
       return;
     }
 
-    alert('Password updated successfully!');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setSavingPassword(true);
+    try {
+      await api.put('/api/users/me/password', {
+        currentPassword,
+        newPassword,
+      });
+      alert('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+          'Failed to update password. Please try again.'
+      );
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -92,13 +139,14 @@ const SettingsPage = () => {
           </div>
           <div style={{ display: 'flex', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: 'white' }}>
             <button
-              onClick={() => setUse24Hour(false)}
+              onClick={() => saveTimeFormat(false)}
+              disabled={savingPrefs}
               style={{
                 padding: '7px 22px',
                 fontSize: '13px',
                 fontWeight: 600,
                 border: 'none',
-                cursor: 'pointer',
+                cursor: savingPrefs ? 'not-allowed' : 'pointer',
                 background: !use24Hour ? '#1a3a5c' : 'transparent',
                 color: !use24Hour ? 'white' : '#6b7a99',
                 fontFamily: "'DM Sans', sans-serif",
@@ -108,13 +156,14 @@ const SettingsPage = () => {
               12-Hour
             </button>
             <button
-              onClick={() => setUse24Hour(true)}
+              onClick={() => saveTimeFormat(true)}
+              disabled={savingPrefs}
               style={{
                 padding: '7px 22px',
                 fontSize: '13px',
                 fontWeight: 600,
                 border: 'none',
-                cursor: 'pointer',
+                cursor: savingPrefs ? 'not-allowed' : 'pointer',
                 background: use24Hour ? '#1a3a5c' : 'transparent',
                 color: use24Hour ? 'white' : '#6b7a99',
                 fontFamily: "'DM Sans', sans-serif",
@@ -273,6 +322,7 @@ const SettingsPage = () => {
 
           <button
             onClick={handleUpdatePassword}
+            disabled={savingPassword}
             style={{
               background: '#1a3a5c',
               color: 'white',
@@ -281,14 +331,14 @@ const SettingsPage = () => {
               padding: '8px 16px',
               fontSize: '13px',
               fontWeight: 600,
-              cursor: 'pointer',
+              cursor: savingPassword ? 'not-allowed' : 'pointer',
               fontFamily: "'DM Sans', sans-serif",
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px'
             }}
           >
-            <i className="bi bi-shield-lock"></i> Update Password
+            <i className="bi bi-shield-lock"></i> {savingPassword ? 'Updating…' : 'Update Password'}
           </button>
         </div>
       </div>
