@@ -271,11 +271,6 @@ function filterStaffList(term) {
   });
 }
 
-function openAddStaffModal() {
-  clearInputFields(["staffFirstName", "staffLastName", "staffDepartment", "staffEmail", "staffPhone"]);
-  openModal("staffModal");
-}
-
 function hideModal(modalId) {
   const modalEl = document.getElementById(modalId);
   if (!modalEl) return;
@@ -284,37 +279,6 @@ function hideModal(modalId) {
   if (modal) {
     modal.hide();
   }
-}
-
-function saveNewStaff() {
-  const firstName = document.getElementById("staffFirstName").value.trim();
-  const lastName = document.getElementById("staffLastName").value.trim();
-  const department = document.getElementById("staffDepartment").value.trim();
-  const email = document.getElementById("staffEmail").value.trim();
-  const phone = document.getElementById("staffPhone").value.trim();
-
-  if (!firstName || !lastName || !department) {
-    alert("Please fill in first name, last name, and department.");
-    return;
-  }
-
-  staffList.push({
-    id: nextStaffId++,
-    firstName,
-    lastName,
-    department,
-    email,
-    phone,
-    kpis: 0,
-    completion: 0,
-    avatarColor: getRandomColor()
-  });
-
-  renderStaffGrid();
-  updateKpiDepartmentDropdown();
-  updateKpiStaffDropdown();
-  hideModal("staffModal");
-  alert("New staff member added.");
 }
 
 function editStaff(id) {

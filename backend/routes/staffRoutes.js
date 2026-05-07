@@ -6,9 +6,6 @@ const { authenticateJWT } = require("../middleware/auth");
 // Get all staff members
 router.get("/", authenticateJWT, staffController.getAllStaff);
 
-// Add a new staff member
-router.post("/", authenticateJWT, staffController.addStaff);
-
 // Update staff member
 router.put("/:id", authenticateJWT, staffController.updateStaff);
 

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { API_BASE_URL } from '../../apiConfig';
 
 const StaffPage = ({ staffList, setStaffList }) => {
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingStaff, setEditingStaff] = useState(null);
@@ -56,11 +55,6 @@ const StaffPage = ({ staffList, setStaffList }) => {
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  const openAddModal = () => {
-    setFormData({ firstName: '', lastName: '', department: '', email: '', password: '', phone: '' });
-    setShowAddModal(true);
-  };
-
   const openEditModal = (staff) => {
     setEditingStaff(staff);
     setFormData({
@@ -71,58 +65,6 @@ const StaffPage = ({ staffList, setStaffList }) => {
       phone: staff.phone
     });
     setShowEditModal(true);
-  };
-
-  const saveNewStaff = async () => {
-    if (!formData.firstName || !formData.lastName || !formData.department || !formData.email || !formData.password) {
-      alert('Please fill in all required fields (First Name, Last Name, Department, Email, and Password)');
-      return;
-    }
-
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-      setError('Missing authentication token');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await axios.post(
-        `${API_BASE_URL}/api/staff`,
-        {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          department: formData.department,
-          phone: formData.phone,
-          password: formData.password,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      // Add the new staff to the list
-      setStaffList([...staffList, response.data.staff]);
-      setShowAddModal(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        department: '',
-        email: '',
-        password: '',
-        phone: ''
-      });
-      setError('');
-    } catch (err) {
-      console.error('Error adding staff:', err);
-      setError(err.response?.data?.message || 'Failed to add staff member');
-      alert(err.response?.data?.message || 'Failed to add staff member');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const saveEditStaff = async () => {
@@ -254,27 +196,7 @@ const StaffPage = ({ staffList, setStaffList }) => {
             }}
           />
         </div>
-        <button
-          onClick={openAddModal}
-          disabled={isLoading}
-          style={{
-            background: '#1a3a5c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            fontFamily: "'DM Sans', sans-serif",
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            opacity: isLoading ? 0.6 : 1
-          }}
-        >
-          <i className="bi bi-plus-lg"></i> Add Staff
-        </button>
+
       </div>
 
       {/* STAFF GRID */}
@@ -382,17 +304,6 @@ const StaffPage = ({ staffList, setStaffList }) => {
           </div>
         ))}
       </div>
-
-      {/* ADD MODAL */}
-      {showAddModal && (
-        <StaffModal
-          title="Add New Staff Member"
-          formData={formData}
-          setFormData={setFormData}
-          onSave={saveNewStaff}
-          onClose={() => setShowAddModal(false)}
-        />
-      )}
 
       {/* EDIT MODAL */}
       {showEditModal && (
