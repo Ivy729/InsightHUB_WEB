@@ -20,4 +20,45 @@ const kpiSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save hook to automatically calculate status whenever the document is saved
+kpiSchema.pre("save", function (next) {
+  const progress = this.progress || 0;
+  const deadline = this.deadline;
+
+  // Achieved: progress == 100
+  if (progress === 100) {
+    this.status = "achieved";
+  }
+  // Check if deadline has passed
+  else if (deadline) {
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    deadlineDate.setHours(0, 0, 0, 0);
+
+    // Overdue: current date > deadline AND progress < 100
+    if (today > deadlineDate && progress < 100) {
+      this.status = "overdue";
+    }
+    // In Progress: progress > 0 AND progress < 100
+    else if (progress > 0 && progress < 100) {
+      this.status = "in-progress";
+    }
+    // Pending: progress == 0
+    else if (progress === 0) {
+      this.status = "pending";
+    }
+  }
+  // In Progress: progress > 0 AND progress < 100
+  else if (progress > 0 && progress < 100) {
+    this.status = "in-progress";
+  }
+  // Pending: progress == 0
+  else if (progress === 0) {
+    this.status = "pending";
+  }
+
+  next();
+});
+
 module.exports = mongoose.model("Kpi", kpiSchema);

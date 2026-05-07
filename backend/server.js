@@ -13,6 +13,10 @@ dotenv.config({
   override: true,
 });
 
+// ADD HERE
+console.log("ENV PATH:", path.resolve(__dirname, ".env"));
+console.log("MONGO:", process.env.MONGODB_URI);
+
 if (!process.env.MONGODB_URI) {
   console.error("MONGODB_URI is missing. Check backend/.env");
   process.exit(1);
