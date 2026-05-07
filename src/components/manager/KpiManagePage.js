@@ -59,12 +59,12 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
             target: parseInt(formData.target) || 0,
             startDate: formData.startDate,
             deadline: formData.deadline,
-            status: editingKpi.status || 'pending'
+            status: editingKpi.status || 'in-progress'
           }
         );
         setKpiList(kpiList.map(k => k._id === editingKpi._id ? response.data : k));
       } else {
-        // Create new KPI
+        // Create new KPI - default to pending
         const response = await axios.post(
           `${API_BASE_URL}/api/kpis`,
           {
@@ -75,7 +75,8 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
             target: parseInt(formData.target) || 0,
             startDate: formData.startDate,
             deadline: formData.deadline,
-            status: 'pending'
+            status: 'pending',
+            progress: 0
           }
         );
         setKpiList([...kpiList, response.data]);

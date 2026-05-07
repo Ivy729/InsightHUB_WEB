@@ -33,34 +33,23 @@ const UpdateProgressPage = ({ kpis = [], selectedKpiId, setSelectedKpiId, setKpi
   const calculateStatus = (progressValue, deadline) => {
     const prog = Number(progressValue);
     
-    // Rule 1: Achieved when progress is 100%
-    if (prog >= 100) {
-      return 'achieved';
-    }
-    
-    // Rule 2: Check if deadline has passed (use end of day for comparison)
+    // Check if deadline has passed
     if (deadline && deadline !== '-') {
       const deadlineDate = new Date(deadline);
-      // Set to end of day (23:59:59) to avoid timezone issues
-      deadlineDate.setHours(23, 59, 59, 999);
-      
       const today = new Date();
-      // Set today to start of day for fair comparison
-      today.setHours(0, 0, 0, 0);
-      
-      // Rule 2: Overdue when deadline passed AND progress < 100%
       if (deadlineDate < today && prog < 100) {
         return 'overdue';
       }
     }
     
-    // Rule 3: In Progress when progress > 0 but not achieved/overdue
-    if (prog > 0) {
+    // Determine status based on progress
+    if (prog >= 100) {
+      return 'achieved';
+    } else if (prog > 0) {
       return 'in-progress';
+    } else {
+      return 'in-progress'; // Default to in-progress
     }
-    
-    // Rule 4: Pending when progress === 0 and not overdue
-    return 'pending';
   };
 
   const saveProgress = async () => {

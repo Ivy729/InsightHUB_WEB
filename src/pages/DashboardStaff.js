@@ -68,8 +68,29 @@ const DashboardStaff = () => {
           .map((kpi) => {
             const progress = Number(kpi.progress) || 0;
             let status = 'in-progress';
-            if (progress >= 100) status = 'achieved';
-            else if (progress < 50) status = 'overdue';
+            
+            // Check if deadline has passed (use end of day for comparison)
+            if (kpi.deadline) {
+              const deadlineDate = new Date(kpi.deadline);
+              // Set to end of day (23:59:59)
+              deadlineDate.setHours(23, 59, 59, 999);
+              
+              const today = new Date();
+              // Set today to start of day
+              today.setHours(0, 0, 0, 0);
+              
+              if (deadlineDate < today && progress < 100) {
+                status = 'overdue';
+              } else if (progress >= 100) {
+                status = 'achieved';
+              } else if (progress > 0) {
+                status = 'in-progress';
+              }
+            } else if (progress >= 100) {
+              status = 'achieved';
+            } else if (progress > 0) {
+              status = 'in-progress';
+            }
 
             return {
               id: kpi._id,
@@ -78,7 +99,7 @@ const DashboardStaff = () => {
               category: 'General',
               target: String(kpi.target ?? '-'),
               progress,
-              deadline: '-',
+              deadline: kpi.deadline || '-',
               status,
             };
           });

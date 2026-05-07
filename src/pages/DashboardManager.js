@@ -81,7 +81,32 @@ const DashboardManager = () => {
         const mappedKpis = response.data.map((kpi) => {
           const targetValue = Number(kpi.target) || 0;
           const progressValue = Number(kpi.progress) || 0;
-          const status = progressValue >= targetValue && targetValue > 0 ? 'achieved' : kpi.status || 'pending';
+          
+          // Determine status based on progress and deadline
+          let status = kpi.status || 'in-progress';
+          
+          // Check if deadline has passed (use end of day for comparison)
+          if (kpi.deadline) {
+            const deadlineDate = new Date(kpi.deadline);
+            // Set to end of day (23:59:59)
+            deadlineDate.setHours(23, 59, 59, 999);
+            
+            const today = new Date();
+            // Set today to start of day
+            today.setHours(0, 0, 0, 0);
+            
+            if (deadlineDate < today && progressValue < 100) {
+              status = 'overdue';
+            } else if (progressValue >= 100) {
+              status = 'achieved';
+            } else if (progressValue > 0) {
+              status = 'in-progress';
+            }
+          } else if (progressValue >= 100) {
+            status = 'achieved';
+          } else if (progressValue > 0) {
+            status = 'in-progress';
+          }
 
           return {
             _id: kpi._id,
