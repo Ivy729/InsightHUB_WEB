@@ -225,8 +225,8 @@ const DashboardPage = ({ kpiList }) => {
             </thead>
             <tbody>
               {kpiList.slice(0, 4).map((kpi, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '13px 14px', fontSize: '14px' }}>{kpi.num}</td>
+                <tr key={kpi._id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '13px 14px', fontSize: '14px' }}>{idx + 1}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>
                     <strong>{kpi.title}</strong><br />
                     <span style={{ fontSize: '12px', color: '#6b7a99' }}>{kpi.desc}</span>

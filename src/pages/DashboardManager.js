@@ -78,21 +78,22 @@ const DashboardManager = () => {
     const fetchKpis = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/kpis`);
-        const mappedKpis = response.data.map((kpi, index) => {
+        const mappedKpis = response.data.map((kpi) => {
           const targetValue = Number(kpi.target) || 0;
           const progressValue = Number(kpi.progress) || 0;
-          const status = progressValue >= targetValue && targetValue > 0 ? 'achieved' : 'in-progress';
+          const status = progressValue >= targetValue && targetValue > 0 ? 'achieved' : kpi.status || 'pending';
 
           return {
-            num: index + 1,
+            _id: kpi._id,
             title: kpi.title || 'Untitled KPI',
-            desc: `Progress ${progressValue}/${targetValue || '-'}`,
-            staff: kpi.owner || 'Unassigned',
-            dept: 'N/A',
+            desc: kpi.desc || '',
+            staff: kpi.staff || 'Unassigned',
+            dept: kpi.dept || 'N/A',
             target: String(kpi.target ?? '-'),
-            startDate: '-',
-            deadline: '-',
-            status
+            startDate: kpi.startDate || '-',
+            deadline: kpi.deadline || '-',
+            status,
+            progress: progressValue
           };
         });
 

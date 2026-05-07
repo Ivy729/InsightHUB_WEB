@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../../apiConfig';
 
 const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -6,6 +8,7 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingKpi, setEditingKpi] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     desc: '',
@@ -36,30 +39,67 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
     setShowModal(true);
   };
 
-  const saveKPI = () => {
+  const saveKPI = async () => {
     if (!formData.title || !formData.dept || !formData.staff) {
       alert('Please fill in required fields');
       return;
     }
 
-    if (editingKpi) {
-      setKpiList(kpiList.map(k => k.num === editingKpi.num ? { ...k, ...formData } : k));
-    } else {
-      const newKpi = {
-        num: Math.max(...kpiList.map(k => k.num), 0) + 1,
-        ...formData,
-        status: 'pending'
-      };
-      setKpiList([...kpiList, newKpi]);
-    }
+    setIsSaving(true);
+    try {
+      if (editingKpi) {
+        // Update existing KPI
+        const response = await axios.put(
+          `${API_BASE_URL}/api/kpis/${editingKpi._id}`,
+          {
+            title: formData.title,
+            desc: formData.desc,
+            staff: formData.staff,
+            dept: formData.dept,
+            target: parseInt(formData.target) || 0,
+            startDate: formData.startDate,
+            deadline: formData.deadline,
+            status: editingKpi.status || 'pending'
+          }
+        );
+        setKpiList(kpiList.map(k => k._id === editingKpi._id ? response.data : k));
+      } else {
+        // Create new KPI
+        const response = await axios.post(
+          `${API_BASE_URL}/api/kpis`,
+          {
+            title: formData.title,
+            desc: formData.desc,
+            staff: formData.staff,
+            dept: formData.dept,
+            target: parseInt(formData.target) || 0,
+            startDate: formData.startDate,
+            deadline: formData.deadline,
+            status: 'pending'
+          }
+        );
+        setKpiList([...kpiList, response.data]);
+      }
 
-    setShowModal(false);
-    setFormData({ title: '', desc: '', staff: '', dept: '', target: '', startDate: '', deadline: '' });
+      setShowModal(false);
+      setFormData({ title: '', desc: '', staff: '', dept: '', target: '', startDate: '', deadline: '' });
+    } catch (error) {
+      console.error('Error saving KPI:', error);
+      alert('Failed to save KPI. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteKPI = (kpiNum) => {
+  const deleteKPI = async (kpi) => {
     if (window.confirm('Delete this KPI?')) {
-      setKpiList(kpiList.filter(k => k.num !== kpiNum));
+      try {
+        await axios.delete(`${API_BASE_URL}/api/kpis/${kpi._id}`);
+        setKpiList(kpiList.filter(k => k._id !== kpi._id));
+      } catch (error) {
+        console.error('Error deleting KPI:', error);
+        alert('Failed to delete KPI. Please try again.');
+      }
     }
   };
 
@@ -71,6 +111,7 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
   });
 
   const departments = [...new Set(staffList.map(s => s.department))];
+
 
   return (
     <div>
@@ -246,9 +287,9 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredKpis.map((kpi) => (
-                <tr key={kpi.num} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '13px 14px', fontSize: '14px' }}>{kpi.num}</td>
+              {filteredKpis.map((kpi, index) => (
+                <tr key={kpi._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '13px 14px', fontSize: '14px' }}>{index + 1}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>
                     <strong>{kpi.title}</strong><br />
                     <span style={{ fontSize: '12px', color: '#6b7a99' }}>{kpi.desc}</span>
@@ -264,8 +305,8 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
                       borderRadius: '20px',
                       fontSize: '11px',
                       fontWeight: 700,
-                      background: kpi.status === 'achieved' ? 'rgba(29,184,122,0.12)' : kpi.status === 'in-progress' ? 'rgba(232,160,32,0.12)' : 'rgba(107,122,153,0.12)',
-                      color: kpi.status === 'achieved' ? '#1db87a' : kpi.status === 'in-progress' ? '#f5a623' : '#6b7a99'
+                      background: kpi.status === 'achieved' ? 'rgba(29,184,122,0.12)' : kpi.status === 'in-progress' ? 'rgba(232,160,32,0.12)' : kpi.status === 'pending' ? 'rgba(107,122,153,0.12)' : 'rgba(229,62,62,0.1)',
+                      color: kpi.status === 'achieved' ? '#1db87a' : kpi.status === 'in-progress' ? '#f5a623' : kpi.status === 'pending' ? '#6b7a99' : '#e53e3e'
                     }}>
                       {kpi.status.charAt(0).toUpperCase() + kpi.status.slice(1)}
                     </span>
@@ -296,7 +337,7 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
                       <i className="bi bi-pencil"></i>
                     </button>
                     <button
-                      onClick={() => deleteKPI(kpi.num)}
+                      onClick={() => deleteKPI(kpi)}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -542,6 +583,7 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
               </button>
               <button
                 onClick={saveKPI}
+                disabled={isSaving}
                 style={{
                   background: '#1a3a5c',
                   color: 'white',
@@ -550,15 +592,16 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
                   padding: '8px 16px',
                   fontSize: '13px',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
                   fontFamily: "'DM Sans', sans-serif",
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  opacity: isSaving ? 0.6 : 1
                 }}
               >
                 <i className={`bi ${editingKpi ? 'bi-check-lg' : 'bi-plus-lg'}`}></i>
-                {editingKpi ? 'Save Changes' : 'Create KPI'}
+                {isSaving ? 'Saving...' : (editingKpi ? 'Save Changes' : 'Create KPI')}
               </button>
             </div>
           </div>
