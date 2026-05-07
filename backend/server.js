@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const kpiRoutes = require("./routes/kpiRoutes");
 const authRoutes = require("./routes/authRoutes");
 const evidenceRoutes = require("./routes/evidenceRoutes");
+const staffRoutes = require("./routes/staffRoutes");
 
 dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/manager", evidenceRoutes);
+app.use("/api/staff", staffRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });

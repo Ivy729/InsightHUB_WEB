@@ -56,6 +56,25 @@ const DashboardManager = () => {
 
     const authToken = localStorage.getItem('authToken');
 
+    const fetchStaff = async () => {
+      if (!authToken) {
+        setStaffList([]);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/staff`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        setStaffList(response.data);
+      } catch (error) {
+        console.error('Error fetching staff:', error);
+        setStaffList([]);
+      }
+    };
+
     const fetchKpis = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/kpis`);
@@ -118,6 +137,7 @@ const DashboardManager = () => {
       }
     };
 
+    fetchStaff();
     fetchKpis();
     fetchEvidenceQueue();
   }, [navigate]);

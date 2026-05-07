@@ -1,17 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../../apiConfig';
 
 const StaffPage = ({ staffList, setStaffList }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingStaff, setEditingStaff] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     department: '',
     email: '',
+    password: '',
     phone: ''
   });
+
+  // Fetch staff data on component mount
+  useEffect(() => {
+    fetchStaffData();
+  }, []);
+
+  const fetchStaffData = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setError('Missing authentication token');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/staff`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      setStaffList(response.data);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching staff:', err);
+      setError('Failed to load staff members');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getInitials = (firstName, lastName) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -23,7 +57,7 @@ const StaffPage = ({ staffList, setStaffList }) => {
   };
 
   const openAddModal = () => {
-    setFormData({ firstName: '', lastName: '', department: '', email: '', phone: '' });
+    setFormData({ firstName: '', lastName: '', department: '', email: '', password: '', phone: '' });
     setShowAddModal(true);
   };
 
@@ -39,39 +73,133 @@ const StaffPage = ({ staffList, setStaffList }) => {
     setShowEditModal(true);
   };
 
-  const saveNewStaff = () => {
-    if (!formData.firstName || !formData.lastName || !formData.department) {
-      alert('Please fill in required fields');
+  const saveNewStaff = async () => {
+    if (!formData.firstName || !formData.lastName || !formData.department || !formData.email || !formData.password) {
+      alert('Please fill in all required fields (First Name, Last Name, Department, Email, and Password)');
       return;
     }
 
-    const newStaff = {
-      id: Math.max(...staffList.map(s => s.id), 0) + 1,
-      ...formData,
-      kpis: 0,
-      completion: 0,
-      avatarColor: getRandomColor()
-    };
-
-    setStaffList([...staffList, newStaff]);
-    setShowAddModal(false);
-  };
-
-  const saveEditStaff = () => {
-    if (!formData.firstName || !formData.lastName || !formData.department) {
-      alert('Please fill in required fields');
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setError('Missing authentication token');
       return;
     }
 
-    setStaffList(staffList.map(s =>
-      s.id === editingStaff.id ? { ...s, ...formData } : s
-    ));
-    setShowEditModal(false);
+    try {
+      setIsLoading(true);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/staff`,
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          department: formData.department,
+          phone: formData.phone,
+          password: formData.password,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      // Add the new staff to the list
+      setStaffList([...staffList, response.data.staff]);
+      setShowAddModal(false);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        department: '',
+        email: '',
+        password: '',
+        phone: ''
+      });
+      setError('');
+    } catch (err) {
+      console.error('Error adding staff:', err);
+      setError(err.response?.data?.message || 'Failed to add staff member');
+      alert(err.response?.data?.message || 'Failed to add staff member');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteStaff = (id) => {
+  const saveEditStaff = async () => {
+    if (!formData.firstName || !formData.lastName || !formData.department || !formData.email) {
+      alert('Please fill in all required fields (First Name, Last Name, Department, and Email)');
+      return;
+    }
+
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setError('Missing authentication token');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `${API_BASE_URL}/api/staff/${editingStaff.id}`,
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          department: formData.department,
+          phone: formData.phone,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      // Update the staff in the list
+      setStaffList(staffList.map(s =>
+        s.id === editingStaff.id ? response.data.staff : s
+      ));
+      setShowEditModal(false);
+      setEditingStaff(null);
+      setError('');
+    } catch (err) {
+      console.error('Error updating staff:', err);
+      setError(err.response?.data?.message || 'Failed to update staff member');
+      alert(err.response?.data?.message || 'Failed to update staff member');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteStaff = async (id) => {
     if (window.confirm('Delete this staff member?')) {
-      setStaffList(staffList.filter(s => s.id !== id));
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setError('Missing authentication token');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        await axios.delete(
+          `${API_BASE_URL}/api/staff/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        // Remove the staff from the list
+        setStaffList(staffList.filter(s => s.id !== id));
+        setError('');
+      } catch (err) {
+        console.error('Error deleting staff:', err);
+        setError(err.response?.data?.message || 'Failed to delete staff member');
+        alert(err.response?.data?.message || 'Failed to delete staff member');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -81,6 +209,33 @@ const StaffPage = ({ staffList, setStaffList }) => {
 
   return (
     <div>
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div style={{
+          background: '#fee',
+          color: '#c33',
+          padding: '12px',
+          borderRadius: '8px',
+          marginBottom: '16px',
+          fontSize: '13px',
+          border: '1px solid #fcc'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {/* LOADING STATE */}
+      {isLoading && (
+        <div style={{
+          textAlign: 'center',
+          padding: '20px',
+          color: '#6b7a99',
+          fontSize: '14px'
+        }}>
+          Loading staff members...
+        </div>
+      )}
+
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
@@ -101,6 +256,7 @@ const StaffPage = ({ staffList, setStaffList }) => {
         </div>
         <button
           onClick={openAddModal}
+          disabled={isLoading}
           style={{
             background: '#1a3a5c',
             color: 'white',
@@ -109,11 +265,12 @@ const StaffPage = ({ staffList, setStaffList }) => {
             padding: '8px 16px',
             fontSize: '13px',
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
             fontFamily: "'DM Sans', sans-serif",
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            opacity: isLoading ? 0.6 : 1
           }}
         >
           <i className="bi bi-plus-lg"></i> Add Staff
@@ -356,12 +513,31 @@ const StaffModal = ({ title, formData, setFormData, onSave, onClose }) => {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
-                Email
+                Email *
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
+                Password *
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Enter password (required for add new staff)"
                 style={{
                   width: '100%',
                   padding: '10px',
