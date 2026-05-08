@@ -62,8 +62,12 @@ const DashboardStaff = () => {
 
         const userKpis = response.data
           .filter((kpi) => {
+            const staffName = (kpi.staff || '').trim().toLowerCase();
             const owner = (kpi.owner || '').trim().toLowerCase();
-            return owner && (owner === normalizedName || owner === normalizedEmail);
+            return (
+              (staffName && (staffName === normalizedName || staffName === normalizedEmail)) ||
+              (owner && (owner === normalizedName || owner === normalizedEmail))
+            );
           })
           .map((kpi) => {
             const progress = Number(kpi.progress) || 0;
@@ -151,7 +155,7 @@ const DashboardStaff = () => {
       case 'submitEvidence':
         return <SubmitEvidencePage />;
       case 'profile':
-        return <StaffProfilePage />;
+        return <StaffProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} />;
       case 'settings':
         return <StaffSettingsPage />;
       default:

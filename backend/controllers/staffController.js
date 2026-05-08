@@ -11,12 +11,14 @@ exports.getAllStaff = async (req, res) => {
     // Enrich staff data with KPI information
     const enrichedStaff = await Promise.all(
       staffMembers.map(async (staff) => {
-        // Count KPIs assigned to this staff
-        const kpis = await Kpi.find({ owner: staff._id });
+        const staffName = staff.name || "";
+        const normalizedStaffName = staffName.trim();
+        const kpis = await Kpi.find({ staff: new RegExp(`^${escapeRegExp(normalizedStaffName)}$`, 'i') });
         const totalKpis = kpis.length;
-        
-        // Calculate completion rate
-        const completedKpis = kpis.filter(k => k.progress >= k.target && k.target > 0).length;
+
+        const completedKpis = kpis.filter(
+          (k) => k.status === 'achieved' || (k.target > 0 && k.progress >= k.target)
+        ).length;
         const completionRate = totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
 
         return {
@@ -84,9 +86,12 @@ exports.updateStaff = async (req, res) => {
     }
 
     // Get KPI info for this staff
-    const kpis = await Kpi.find({ owner: id });
-    const totalKpis = kpis.length;
-    const completedKpis = kpis.filter(k => k.progress >= k.target && k.target > 0).length;
+    const staffName = updatedStaff.name || "";
+    const staffKpis = await Kpi.find({ staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, 'i') });
+    const totalKpis = staffKpis.length;
+    const completedKpis = staffKpis.filter(
+      (k) => k.status === 'achieved' || (k.target > 0 && k.progress >= k.target)
+    ).length;
     const completionRate = totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
 
     res.status(200).json({
@@ -122,8 +127,12 @@ exports.deleteStaff = async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    // Optionally, you can also delete or reassign KPIs associated with this staff
-    await Kpi.updateMany({ owner: id }, { owner: null });
+    // Optionally, you can also unassign KPIs associated with this staff member
+    const staffName = deletedStaff.name || "";
+    await Kpi.updateMany(
+      { staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, 'i') },
+      { staff: "" }
+    );
 
     res.status(200).json({
       message: "Staff member deleted successfully",
@@ -135,10 +144,15 @@ exports.deleteStaff = async (req, res) => {
   }
 };
 
+// Helper function to escape regex special characters
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // Helper function to generate a consistent color from email
 function generateColorFromEmail(email) {
   const colors = ["#1db87a", "#e8a020", "#e53e3e", "#3b82f6", "#9b59b6", "#16a085"];
-  const hash = email.split("").reduce((acc, char) => {
+  const hash = (email || "").split("").reduce((acc, char) => {
     return acc + char.charCodeAt(0);
   }, 0);
   return colors[hash % colors.length];

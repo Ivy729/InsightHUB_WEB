@@ -21,7 +21,7 @@ const kpiSchema = new mongoose.Schema(
 );
 
 // Pre-save hook to automatically calculate status whenever the document is saved
-kpiSchema.pre("save", function (next) {
+kpiSchema.pre("save", function () {
   const progress = this.progress || 0;
   const deadline = this.deadline;
 
@@ -58,7 +58,7 @@ kpiSchema.pre("save", function (next) {
     this.status = "pending";
   }
 
-  next();
+  
 });
 
 module.exports = mongoose.model("Kpi", kpiSchema);

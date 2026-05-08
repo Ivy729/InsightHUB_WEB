@@ -32,6 +32,115 @@ const DashboardManager = () => {
     settings: 'Settings'
   };
 
+  const fetchStaff = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setStaffList([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/staff`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      setStaffList(response.data);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      setStaffList([]);
+    }
+  };
+
+  const fetchKpis = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/kpis`);
+      const mappedKpis = response.data.map((kpi) => {
+        const targetValue = Number(kpi.target) || 0;
+        const progressValue = Number(kpi.progress) || 0;
+        
+        // Determine status based on progress and deadline
+        let status = kpi.status || 'in-progress';
+        
+        // Check if deadline has passed (use end of day for comparison)
+        if (kpi.deadline) {
+          const deadlineDate = new Date(kpi.deadline);
+          // Set to end of day (23:59:59)
+          deadlineDate.setHours(23, 59, 59, 999);
+          
+          const today = new Date();
+          // Set today to start of day
+          today.setHours(0, 0, 0, 0);
+          
+          if (deadlineDate < today && progressValue < 100) {
+            status = 'overdue';
+          } else if (progressValue >= 100) {
+            status = 'achieved';
+          } else if (progressValue > 0) {
+            status = 'in-progress';
+          }
+        } else if (progressValue >= 100) {
+          status = 'achieved';
+        } else if (progressValue > 0) {
+          status = 'in-progress';
+        }
+
+        return {
+          _id: kpi._id,
+          title: kpi.title || 'Untitled KPI',
+          desc: kpi.desc || '',
+          staff: kpi.staff || 'Unassigned',
+          dept: kpi.dept || 'N/A',
+          target: String(kpi.target ?? '-'),
+          startDate: kpi.startDate || '-',
+          deadline: kpi.deadline || '-',
+          status,
+          progress: progressValue
+        };
+      });
+
+      setKpiList(mappedKpis);
+      setApiError('');
+    } catch (error) {
+      setApiError('Failed to load KPIs from backend API.');
+      setKpiList([]);
+    }
+  };
+
+  const fetchEvidenceQueue = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setEvidenceList([]);
+      setEvidenceError('Missing login token. Please sign in again.');
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/manager/evidence-queue`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      const mappedEvidence = response.data.map((item) => ({
+        id: item._id,
+        staff: item.staffId?.name || 'Unknown Staff',
+        kpi: item.kpiId?.title || 'Unknown KPI',
+        evidence: item.fileUrl || 'No file URL',
+        submitted: item.submittedAt
+          ? new Date(item.submittedAt).toLocaleDateString()
+          : '-',
+        status: item.status,
+      }));
+
+      setEvidenceList(mappedEvidence);
+      setEvidenceError('');
+    } catch (error) {
+      setEvidenceList([]);
+      setEvidenceError('Failed to load evidence queue from backend API.');
+    }
+  };
+
   useEffect(() => {
     let parsedUser = null;
     try {
@@ -53,115 +162,6 @@ const DashboardManager = () => {
       name: parsedUser.name || 'Manager User',
       role: parsedUser.role || 'manager',
     });
-
-    const authToken = localStorage.getItem('authToken');
-
-    const fetchStaff = async () => {
-      if (!authToken) {
-        setStaffList([]);
-        return;
-      }
-
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/staff`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        });
-        setStaffList(response.data);
-      } catch (error) {
-        console.error('Error fetching staff:', error);
-        setStaffList([]);
-      }
-    };
-
-    const fetchKpis = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/kpis`);
-        const mappedKpis = response.data.map((kpi) => {
-          const targetValue = Number(kpi.target) || 0;
-          const progressValue = Number(kpi.progress) || 0;
-          
-          // Determine status based on progress and deadline
-          let status = kpi.status || 'in-progress';
-          
-          // Check if deadline has passed (use end of day for comparison)
-          if (kpi.deadline) {
-            const deadlineDate = new Date(kpi.deadline);
-            // Set to end of day (23:59:59)
-            deadlineDate.setHours(23, 59, 59, 999);
-            
-            const today = new Date();
-            // Set today to start of day
-            today.setHours(0, 0, 0, 0);
-            
-            if (deadlineDate < today && progressValue < 100) {
-              status = 'overdue';
-            } else if (progressValue >= 100) {
-              status = 'achieved';
-            } else if (progressValue > 0) {
-              status = 'in-progress';
-            }
-          } else if (progressValue >= 100) {
-            status = 'achieved';
-          } else if (progressValue > 0) {
-            status = 'in-progress';
-          }
-
-          return {
-            _id: kpi._id,
-            title: kpi.title || 'Untitled KPI',
-            desc: kpi.desc || '',
-            staff: kpi.staff || 'Unassigned',
-            dept: kpi.dept || 'N/A',
-            target: String(kpi.target ?? '-'),
-            startDate: kpi.startDate || '-',
-            deadline: kpi.deadline || '-',
-            status,
-            progress: progressValue
-          };
-        });
-
-        setKpiList(mappedKpis);
-        setApiError('');
-      } catch (error) {
-        setApiError('Failed to load KPIs from backend API.');
-        setKpiList([]);
-      }
-    };
-
-    const fetchEvidenceQueue = async () => {
-      if (!authToken) {
-        setEvidenceList([]);
-        setEvidenceError('Missing login token. Please sign in again.');
-        return;
-      }
-
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/manager/evidence-queue`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        });
-
-        const mappedEvidence = response.data.map((item) => ({
-          id: item._id,
-          staff: item.staffId?.name || 'Unknown Staff',
-          kpi: item.kpiId?.title || 'Unknown KPI',
-          evidence: item.fileUrl || 'No file URL',
-          submitted: item.submittedAt
-            ? new Date(item.submittedAt).toLocaleDateString()
-            : '-',
-          status: item.status,
-        }));
-
-        setEvidenceList(mappedEvidence);
-        setEvidenceError('');
-      } catch (error) {
-        setEvidenceList([]);
-        setEvidenceError('Failed to load evidence queue from backend API.');
-      }
-    };
 
     fetchStaff();
     fetchKpis();
@@ -215,7 +215,7 @@ const DashboardManager = () => {
       case 'dashboard':
         return <DashboardPage staffList={staffList} kpiList={kpiList} />;
       case 'kpiManage':
-        return <KpiManagePage kpiList={kpiList} setKpiList={setKpiList} staffList={staffList} />;
+        return <KpiManagePage kpiList={kpiList} setKpiList={setKpiList} staffList={staffList} refreshStaffList={fetchStaff} />;
       case 'verify':
         return (
           <VerifyPage

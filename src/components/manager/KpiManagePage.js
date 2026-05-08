@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../apiConfig';
 
-const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
+const KpiManagePage = ({ kpiList, setKpiList, staffList, refreshStaffList }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -82,6 +82,10 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
         setKpiList([...kpiList, response.data]);
       }
 
+      if (refreshStaffList) {
+        await refreshStaffList();
+      }
+
       setShowModal(false);
       setFormData({ title: '', desc: '', staff: '', dept: '', target: '', startDate: '', deadline: '' });
     } catch (error) {
@@ -97,6 +101,9 @@ const KpiManagePage = ({ kpiList, setKpiList, staffList }) => {
       try {
         await axios.delete(`${API_BASE_URL}/api/kpis/${kpi._id}`);
         setKpiList(kpiList.filter(k => k._id !== kpi._id));
+        if (refreshStaffList) {
+          await refreshStaffList();
+        }
       } catch (error) {
         console.error('Error deleting KPI:', error);
         alert('Failed to delete KPI. Please try again.');
