@@ -1,61 +1,95 @@
 import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../apiConfig';
 
 const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notifError, setNotifError] = useState('');
   const notifWrapRef = useRef(null);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'Overdue KPI Alert',
-      msg: 'Community Service is overdue by Kevin Lim.',
-      time: '2 hours ago',
-      read: false,
-      icon: 'bi-exclamation-triangle-fill',
-      color: '#e53e3e'
-    },
-    {
-      id: 2,
-      title: 'KPI Achieved',
-      msg: 'Nora Rahman completed Student Pass Rate at 100%.',
-      time: '1 day ago',
-      read: false,
-      icon: 'bi-check-circle-fill',
-      color: '#1db87a'
-    },
-    {
-      id: 3,
-      title: 'Evidence Submitted',
-      msg: 'Ali Samsuri submitted proof for Research Publications.',
-      time: '2 days ago',
-      read: false,
-      icon: 'bi-file-earmark-check-fill',
-      color: '#1a3a5c'
-    }
-  ]);
 
-  const toggleNotif = () => {
-    setShowNotif(!showNotif);
-    if (showNotif) {
-      setExpandedNotifId(null);
+  const fetchNotifications = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setNotifications([]);
+      return;
+    }
+
+    setLoadingNotifications(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/manager/notifications`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      setNotifications(response.data || []);
+      setNotifError('');
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+      setNotifError('Unable to load notifications right now.');
+    } finally {
+      setLoadingNotifications(false);
     }
   };
 
-  const markRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const toggleNotif = () => {
+    const nextShow = !showNotif;
+    setShowNotif(nextShow);
+    if (!nextShow) {
+      setExpandedNotifId(null);
+    }
+    if (nextShow) {
+      fetchNotifications();
+    }
+  };
+
+  const markRead = async (id) => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/manager/notifications/${id}/read`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    } catch (error) {
+      console.error('Failed to mark notification read:', error);
+    }
   };
 
   const toggleExpandedNotif = (id) => {
-    setExpandedNotifId(prev => (prev === id ? null : id));
+    setExpandedNotifId((prev) => (prev === id ? null : id));
   };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const clearAllNotifications = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/manager/notifications/read-all`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Failed to mark all notifications read:', error);
+    }
   };
 
-  const hasUnread = notifications.some(n => !n.read);
+  const hasUnread = notifications.some((n) => !n.read);
   const initials = userName
     .split(' ')
     .filter(Boolean)
@@ -64,6 +98,9 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
     .join('') || 'MU';
 
   useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+
     const handleClickOutside = (event) => {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
         setShowNotif(false);
@@ -74,6 +111,7 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      clearInterval(interval);
     };
   }, []);
 
@@ -136,7 +174,7 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
             position: 'absolute',
             top: '58px',
             right: '28px',
-            width: '340px',
+            width: '360px',
             background: 'white',
             border: '1px solid #e2e8f0',
             borderRadius: '14px',
@@ -164,12 +202,30 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
                   fontFamily: "'DM Sans', sans-serif"
                 }}
               >
-                Clear all
+                Mark all as read
               </button>
             </div>
 
-            <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
-              {notifications.length === 0 ? (
+            <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+              {loadingNotifications ? (
+                <div style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  color: '#6b7a99',
+                  fontSize: '13px'
+                }}>
+                  Loading notifications...
+                </div>
+              ) : notifError ? (
+                <div style={{
+                  padding: '24px',
+                  textAlign: 'center',
+                  color: '#d63384',
+                  fontSize: '13px'
+                }}>
+                  {notifError}
+                </div>
+              ) : notifications.length === 0 ? (
                 <div style={{
                   padding: '24px',
                   textAlign: 'center',
@@ -179,89 +235,117 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
                   No notifications
                 </div>
               ) : (
-                notifications.map(notif => (
-                  <div
-                    key={notif.id}
-                    style={{
-                      padding: '14px 18px',
-                      borderBottom: '1px solid #e2e8f0',
-                      background: notif.read ? 'white' : 'rgba(26,58,92,0.03)',
-                      display: 'flex',
-                      gap: '12px',
-                      alignItems: 'flex-start',
-                      flexDirection: 'column'
-                    }}
-                  >
+                notifications.map((notif) => {
+                  const timeLabel = notif.createdAt
+                    ? new Date(notif.createdAt).toLocaleString()
+                    : 'Just now';
+                  const statusColor = notif.read ? '#6b7a99' : '#1a3a5c';
+                  const titleMap = {
+                    'pending-evidence': 'Evidence Reminder',
+                    'progress-updated': 'KPI Progress Updated',
+                    'kpi-completed': 'KPI Completed',
+                    'kpi-overdue': 'Overdue KPI Alert',
+                    'evidence-submitted': 'Evidence Submitted',
+                  };
+                  const iconMap = {
+                    'pending-evidence': 'bi-clock-fill',
+                    'progress-updated': 'bi-arrow-repeat',
+                    'kpi-completed': 'bi-check-circle-fill',
+                    'kpi-overdue': 'bi-exclamation-triangle-fill',
+                    'evidence-submitted': 'bi-file-earmark-check-fill',
+                  };
+                  const badgeColor = notif.actionType === 'kpi-overdue' ? '#e53e3e' : notif.actionType === 'kpi-completed' ? '#1db87a' : '#1a3a5c';
+
+                  return (
                     <div
-                      onClick={() => toggleExpandedNotif(notif.id)}
+                      key={notif._id}
                       style={{
-                        cursor: 'pointer',
+                        padding: '14px 18px',
+                        borderBottom: '1px solid #e2e8f0',
+                        background: notif.read ? 'white' : 'rgba(26,58,92,0.03)',
                         display: 'flex',
                         gap: '12px',
                         alignItems: 'flex-start',
-                        width: '100%'
+                        flexDirection: 'column'
                       }}
                     >
-                      <div style={{
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '50%',
-                        background: `${notif.color}22`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}>
-                        <i className={`bi ${notif.icon}`} style={{ color: notif.color, fontSize: '14px' }}></i>
-                      </div>
-                      <div style={{ flex: 1 }}>
+                      <div
+                        onClick={() => toggleExpandedNotif(notif._id)}
+                        style={{
+                          cursor: 'pointer',
+                          display: 'flex',
+                          gap: '12px',
+                          alignItems: 'flex-start',
+                          width: '100%'
+                        }}
+                      >
                         <div style={{
-                          fontWeight: notif.read ? 500 : 700,
-                          fontSize: '13px'
-                        }}>
-                          {notif.title}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
-                          {notif.msg}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
-                          {notif.time}
-                        </div>
-                      </div>
-                      {!notif.read && (
-                        <div style={{
-                          width: '8px',
-                          height: '8px',
+                          width: '34px',
+                          height: '34px',
                           borderRadius: '50%',
-                          background: '#1a3a5c',
-                          marginTop: '4px'
-                        }}></div>
-                      )}
-                    </div>
-                    {expandedNotifId === notif.id && (
-                      <div style={{ paddingLeft: '46px' }}>
+                          background: `${badgeColor}22`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <i className={`bi ${iconMap[notif.actionType] || 'bi-bell-fill'}`} style={{ color: badgeColor, fontSize: '14px' }}></i>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            fontWeight: notif.read ? 500 : 700,
+                            fontSize: '13px',
+                            color: statusColor
+                          }}>
+                            {titleMap[notif.actionType] || 'Notification'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
+                            {notif.message}
+                          </div>
+                          {notif.staffName && notif.kpiTitle && (
+                            <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '6px' }}>
+                              {notif.staffName} • {notif.kpiTitle}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
+                            {timeLabel}
+                          </div>
+                        </div>
                         {!notif.read && (
-                          <button
-                            type="button"
-                            onClick={() => markRead(notif.id)}
-                            style={{
-                              fontSize: '12px',
-                              color: 'white',
-                              background: '#1a3a5c',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 10px',
-                              cursor: 'pointer',
-                              fontFamily: "'DM Sans', sans-serif"
-                            }}
-                          >
-                            Mark as read
-                          </button>
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#1a3a5c',
+                            marginTop: '4px'
+                          }}></div>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))
+                      {expandedNotifId === notif._id && (
+                        <div style={{ paddingLeft: '46px' }}>
+                          {!notif.read && (
+                            <button
+                              type="button"
+                              onClick={() => markRead(notif._id)}
+                              style={{
+                                fontSize: '12px',
+                                color: 'white',
+                                background: '#1a3a5c',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 10px',
+                                cursor: 'pointer',
+                                fontFamily: "'DM Sans', sans-serif"
+                              }}
+                            >
+                              Mark as read
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

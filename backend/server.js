@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const kpiRoutes = require("./routes/kpiRoutes");
 const authRoutes = require("./routes/authRoutes");
 const evidenceRoutes = require("./routes/evidenceRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 
 dotenv.config({
@@ -35,6 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/manager", evidenceRoutes);
+app.use("/api/manager/notifications", notificationRoutes);
 app.use("/api/staff", staffRoutes);
 
 app.get("/api/health", (req, res) => {

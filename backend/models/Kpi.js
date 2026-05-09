@@ -16,6 +16,7 @@ const kpiSchema = new mongoose.Schema(
     dept: { type: String, default: "" },
     startDate: { type: String, default: "" },
     deadline: { type: String, default: "" },
+    notifiedOverdue: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -29,7 +30,11 @@ kpiSchema.pre("save", function () {
   if (progress === 100) {
     this.status = "achieved";
   }
-  // Check if deadline has passed
+  // New KPIs with no progress should start as pending, even if a deadline has already passed
+  else if (this.isNew && progress === 0) {
+    this.status = "pending";
+  }
+  // Check if deadline has passed for existing KPIs
   else if (deadline) {
     const deadlineDate = new Date(deadline);
     const today = new Date();

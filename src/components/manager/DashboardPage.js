@@ -10,6 +10,27 @@ const DashboardPage = ({ kpiList }) => {
   const inProgressKpis = kpiList.filter(k => k.status === 'in-progress').length;
   const overdueKpis = kpiList.filter(k => k.status === 'overdue').length;
 
+  const activeKpis = [...kpiList]
+    .filter(kpi => kpi.status !== 'achieved')
+    .sort((a, b) => {
+      const priority = { overdue: 0, 'in-progress': 1, pending: 2 };
+      const statusA = priority[a.status] !== undefined ? a.status : 'pending';
+      const statusB = priority[b.status] !== undefined ? b.status : 'pending';
+      if (statusA !== statusB) {
+        return priority[statusA] - priority[statusB];
+      }
+
+      const parseDate = (value) => {
+        if (!value || value === '-') return new Date(8640000000000000);
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? new Date(8640000000000000) : parsed;
+      };
+
+      const deadlineA = parseDate(a.deadline);
+      const deadlineB = parseDate(b.deadline);
+      return deadlineA - deadlineB;
+    });
+
   const chartConfig = {
     labels: ['Current KPI Status'],
     datasets: [
@@ -71,6 +92,7 @@ const DashboardPage = ({ kpiList }) => {
 
   const getStatusPillStyle = (status) => {
     const styleMap = {
+      pending: { background: 'rgba(107,122,153,0.12)', color: '#6b7a99', label: 'Pending' },
       achieved: { background: 'rgba(29,184,122,0.12)', color: '#1db87a', label: 'Achieved' },
       'in-progress': { background: 'rgba(232,160,32,0.12)', color: '#f5a623', label: 'In Progress' },
       overdue: { background: 'rgba(229,62,62,0.1)', color: '#e53e3e', label: 'Overdue' },
@@ -224,7 +246,7 @@ const DashboardPage = ({ kpiList }) => {
               </tr>
             </thead>
             <tbody>
-              {kpiList.slice(0, 4).map((kpi, idx) => (
+              {activeKpis.map((kpi, idx) => (
                 <tr key={kpi._id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>{idx + 1}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>
@@ -253,10 +275,10 @@ const DashboardPage = ({ kpiList }) => {
                   </td>
                 </tr>
               ))}
-              {kpiList.length === 0 && (
+              {activeKpis.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ padding: '24px 14px', textAlign: 'center', color: '#6b7a99', fontSize: '14px' }}>
-                    No KPI data yet.
+                    No active KPIs yet.
                   </td>
                 </tr>
               )}
