@@ -13,6 +13,7 @@ const evidenceSchema = new mongoose.Schema(
       required: true,
     },
     fileUrl: { type: String, required: true, trim: true },
+    originalFileName: { type: String, default: "" },
     staffNotes: { type: String, default: "", trim: true },
     status: {
       type: String,

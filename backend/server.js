@@ -8,13 +8,14 @@ const authRoutes = require("./routes/authRoutes");
 const evidenceRoutes = require("./routes/evidenceRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const staffRoutes = require("./routes/staffRoutes");
+const staffEvidenceRoutes = require("./routes/staffEvidenceRoutes");
+const staffNotificationRoutes = require("./routes/staffNotificationRoutes");
 
 dotenv.config({
   path: path.resolve(__dirname, ".env"),
   override: true,
 });
 
-// ADD HERE
 console.log("ENV PATH:", path.resolve(__dirname, ".env"));
 console.log("MONGO:", process.env.MONGODB_URI);
 
@@ -38,6 +39,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/manager", evidenceRoutes);
 app.use("/api/manager/notifications", notificationRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/staff/evidence", staffEvidenceRoutes); 
+app.use("/api/staff/notifications", staffNotificationRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });

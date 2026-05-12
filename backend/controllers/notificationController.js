@@ -108,4 +108,46 @@ exports.markAllNotificationsRead = async (req, res) => {
   }
 };
 
+exports.getStaffNotifications = async (req, res) => {
+  try {
+    const staffId = req.user.userId;
+    const notifications = await Notification.find({ staffId })
+      .sort({ read: 1, createdAt: -1 })
+      .lean();
+    res.json(notifications);
+  } catch (error) {
+    console.error("Staff notification fetch error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.markStaffNotificationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const staffId = req.user.userId;
+    const notification = await Notification.findOne({ _id: id, staffId });
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+    notification.read = true;
+    await notification.save();
+    res.json({ message: "Marked as read", notification });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.markAllStaffNotificationsRead = async (req, res) => {
+  try {
+    const staffId = req.user.userId;
+    const result = await Notification.updateMany(
+      { staffId, read: false },
+      { read: true }
+    );
+    res.json({ message: "All marked as read", modifiedCount: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.createNotification = createNotification;

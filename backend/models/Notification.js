@@ -21,7 +21,9 @@ const notificationSchema = new mongoose.Schema(
         "progress-updated",
         "kpi-completed",
         "kpi-overdue",
-        "pending-evidence"
+        "pending-evidence",
+        "evidence-approved",
+        "evidence-rejected"
       ],
       required: true,
     },

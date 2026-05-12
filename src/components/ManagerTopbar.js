@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
 
-const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
+const ManagerTopbar = ({ pageTitle, userName = 'Manager User', onNotificationClick }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -53,11 +53,7 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
       await axios.put(
         `${API_BASE_URL}/api/manager/notifications/${id}/read`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
     } catch (error) {
@@ -77,11 +73,7 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
       await axios.put(
         `${API_BASE_URL}/api/manager/notifications/read-all`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (error) {
@@ -270,7 +262,15 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User' }) => {
                       }}
                     >
                       <div
-                        onClick={() => toggleExpandedNotif(notif._id)}
+                        onClick={() => {
+                          if (
+                            (notif.actionType === 'evidence-submitted' || notif.actionType === 'pending-evidence') &&
+                            onNotificationClick
+                          ) {
+                            onNotificationClick(notif);
+                          }
+                          toggleExpandedNotif(notif._id);
+                        }}
                         style={{
                           cursor: 'pointer',
                           display: 'flex',

@@ -153,7 +153,7 @@ const DashboardStaff = () => {
           />
         );
       case 'submitEvidence':
-        return <SubmitEvidencePage />;
+        return <SubmitEvidencePage kpis={staffKpis}/>;
       case 'profile':
         return <StaffProfilePage currentUser={currentUser} setCurrentUser={setCurrentUser} />;
       case 'settings':

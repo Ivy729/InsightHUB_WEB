@@ -126,7 +126,7 @@ const DashboardManager = () => {
         id: item._id,
         staff: item.staffId?.name || 'Unknown Staff',
         kpi: item.kpiId?.title || 'Unknown KPI',
-        evidence: item.fileUrl || 'No file URL',
+        evidence: item.originalFileName || 'No file name',
         submitted: item.submittedAt
           ? new Date(item.submittedAt).toLocaleDateString()
           : '-',
@@ -235,6 +235,12 @@ const DashboardManager = () => {
     }
   };
 
+  const handleNotificationClick = (notif) => {
+    if (['evidence-submitted', 'pending-evidence'].includes(notif.actionType)) {
+      showPage('verify');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar
@@ -246,7 +252,7 @@ const DashboardManager = () => {
         userRole={currentUser.role}
       />
       <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <Topbar pageTitle={pageTitle} userName={currentUser.name} />
+        <Topbar pageTitle={pageTitle} userName={currentUser.name} onNotificationClick={handleNotificationClick} />
         <div style={{ padding: '26px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {apiError && (
             <div style={{

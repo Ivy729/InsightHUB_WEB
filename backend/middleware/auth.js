@@ -29,7 +29,18 @@ const isManager = (req, res, next) => {
   return next();
 };
 
+const isStaff = (req, res, next) => {
+  const role = String(req.user?.role || "").toLowerCase();
+  if (role !== "staff") {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Staff role is required." });
+  }
+  return next();
+};
+
 module.exports = {
   authenticateJWT,
   isManager,
+  isStaff,
 };

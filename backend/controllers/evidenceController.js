@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Evidence = require("../models/Evidence");
 const Kpi = require("../models/Kpi");
+const User = require("../models/User");              
+const { createNotification } = require("./notificationController");
 
 const getEvidenceQueue = async (req, res) => {
   try {
@@ -37,6 +39,20 @@ const verifyEvidence = async (req, res) => {
 
     evidence.status = status;
     await evidence.save();
+
+    const kpi = await Kpi.findById(evidence.kpiId).select("title");
+    const staffUser = await User.findById(evidence.staffId).select("name");
+    const staffName = staffUser?.name || "Staff";
+    const kpiTitle = kpi?.title || "KPI";
+
+    await createNotification({
+      staffId: evidence.staffId,
+      staffName,
+      kpiId: evidence.kpiId,
+      kpiTitle,
+      actionType: status === 'approved' ? 'evidence-approved' : 'evidence-rejected',
+      message: `Your evidence for "${kpiTitle}" has been ${status}.`,
+    });
 
     if (status === "approved") {
       await Kpi.findByIdAndUpdate(evidence.kpiId, {
