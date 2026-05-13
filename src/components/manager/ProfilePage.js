@@ -41,8 +41,8 @@ const ProfilePage = () => {
 
         const user = response.data;
         const nameParts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
-        setFirstName(nameParts[0] || '');
-        setLastName(nameParts.slice(1).join(' '));
+        setFirstName(user.firstName || nameParts[0] || '');
+        setLastName(user.lastName || nameParts.slice(1).join(' ') || '');
         setEmail(user.email || '');
         setPhone(user.phone || '');
         setPosition(user.position || '');
@@ -91,6 +91,8 @@ const ProfilePage = () => {
         `${API_BASE_URL}/api/auth/me`,
         {
           name: fullName,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           email,
           phone,
           position,

@@ -9,6 +9,17 @@ const { authenticateJWT } = require("../middleware/auth");
 const router = express.Router();
 const RESET_CODE_TTL_MS = 10 * 60 * 1000;
 
+const splitDisplayName = (fullName) => {
+  const parts = String(fullName || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" ") || "",
+  };
+};
+
 const createResetCode = () =>
   String(Math.floor(1000 + Math.random() * 9000));
 
@@ -68,9 +79,13 @@ router.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const trimmedName = String(name).trim();
+    const { firstName, lastName } = splitDisplayName(trimmedName);
 
     const user = await User.create({
-      name,
+      name: trimmedName,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
       role: role || "staff",
@@ -92,6 +107,8 @@ router.post("/register", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         phone: user.phone || "",
@@ -131,12 +148,16 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    const loginNameParts = splitDisplayName(user.name);
+
     res.status(200).json({
       message: "Sign in successful",
       token,
       user: {
         id: user._id,
         name: user.name,
+        firstName: user.firstName || loginNameParts.firstName,
+        lastName: user.lastName || loginNameParts.lastName,
         email: user.email,
         role: user.role,
         phone: user.phone || "",
@@ -157,9 +178,13 @@ router.get("/me", authenticateJWT, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const nameParts = splitDisplayName(user.name);
+
     return res.status(200).json({
       id: user._id,
       name: user.name,
+      firstName: user.firstName || nameParts.firstName,
+      lastName: user.lastName || nameParts.lastName,
       email: user.email,
       role: user.role,
       phone: user.phone || "",
@@ -174,11 +199,33 @@ router.get("/me", authenticateJWT, async (req, res) => {
 
 router.put("/me", authenticateJWT, async (req, res) => {
   try {
-    const { name, email, phone, position, department, profilePhoto } = req.body;
+    const {
+      name,
+      firstName: bodyFirstName,
+      lastName: bodyLastName,
+      email,
+      phone,
+      position,
+      department,
+      profilePhoto,
+    } = req.body;
 
-    if (!name || !email) {
+    const firstTrim =
+      bodyFirstName != null ? String(bodyFirstName).trim() : "";
+    const lastTrim = bodyLastName != null ? String(bodyLastName).trim() : "";
+    let fullName = String(name || "").trim();
+    if (firstTrim || lastTrim) {
+      fullName = `${firstTrim} ${lastTrim}`.trim();
+    }
+
+    if (!fullName || !email) {
       return res.status(400).json({ message: "Name and email are required" });
     }
+
+    const { firstName, lastName } =
+      firstTrim || lastTrim
+        ? { firstName: firstTrim, lastName: lastTrim }
+        : splitDisplayName(fullName);
 
     const normalizedEmail = String(email).trim().toLowerCase();
     const existingEmailUser = await User.findOne({
@@ -190,7 +237,9 @@ router.put("/me", authenticateJWT, async (req, res) => {
     }
 
     const updates = {
-      name: String(name).trim(),
+      name: fullName,
+      firstName,
+      lastName,
       email: normalizedEmail,
       phone: String(phone || "").trim(),
       position: String(position || "").trim(),
@@ -207,11 +256,15 @@ router.put("/me", authenticateJWT, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const updatedParts = splitDisplayName(updatedUser.name);
+
     return res.status(200).json({
       message: "Profile updated successfully",
       user: {
         id: updatedUser._id,
         name: updatedUser.name,
+        firstName: updatedUser.firstName || updatedParts.firstName,
+        lastName: updatedUser.lastName || updatedParts.lastName,
         email: updatedUser.email,
         role: updatedUser.role,
         phone: updatedUser.phone || "",

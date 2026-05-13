@@ -21,10 +21,21 @@ exports.getAllStaff = async (req, res) => {
         ).length;
         const completionRate = totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
 
+        const splitFromName = (full) => {
+          const p = String(full || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+          return {
+            first: p[0] || "",
+            last: p.slice(1).join(" ") || "",
+          };
+        };
+        const fromName = splitFromName(staff.name);
         return {
           id: staff._id,
-          firstName: staff.name.split(" ")[0] || staff.name,
-          lastName: staff.name.split(" ").slice(1).join(" ") || "",
+          firstName: staff.firstName || fromName.first || staff.name,
+          lastName: staff.lastName || fromName.last,
           fullName: staff.name,
           email: staff.email,
           department: staff.department || "N/A",
@@ -72,7 +83,9 @@ exports.updateStaff = async (req, res) => {
     const updatedStaff = await User.findByIdAndUpdate(
       id,
       {
-        name: `${firstName} ${lastName}`,
+        name: `${firstName} ${lastName}`.trim(),
+        firstName,
+        lastName,
         email,
         department: department || "",
         position: position || "",
