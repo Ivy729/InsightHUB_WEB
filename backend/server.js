@@ -11,6 +11,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const staffEvidenceRoutes = require("./routes/staffEvidenceRoutes");
 const staffNotificationRoutes = require("./routes/staffNotificationRoutes");
+const progressHistoryRoutes = require("./routes/progressHistoryRoutes");
 
 dotenv.config({
   path: path.resolve(__dirname, ".env"),
@@ -45,6 +46,7 @@ app.use("/api/manager/notifications", notificationRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/staff/evidence", staffEvidenceRoutes);
 app.use("/api/staff/notifications", staffNotificationRoutes);
+app.use("/api/staff/progress-history", progressHistoryRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });

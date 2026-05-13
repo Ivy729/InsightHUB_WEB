@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apiClient';
 import { API_BASE_URL } from '../../apiConfig';
+import { DEPARTMENT_OPTIONS, isDepartmentOption } from '../../constants/departments';
 
 const ProfilePage = ({ onUserUpdated } = {}) => {
   const authUser = useMemo(() => {
@@ -16,7 +17,7 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
   const [email, setEmail] = useState(authUser?.email || '');
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('');
-  const [position, setPosition] = useState('Staff');
+  const [displayRole, setDisplayRole] = useState('Staff');
   const [saving, setSaving] = useState(false);
   const [avatarPath, setAvatarPath] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -34,7 +35,7 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
         setEmail(me.email || '');
         setPhone(me.phone || '');
         setDepartment(me.department || '');
-        setPosition(me.position || (me.role === 'staff' ? 'Staff' : ''));
+        setDisplayRole(String(me.role || '').toLowerCase() === 'manager' ? 'Manager' : 'Staff');
         setAvatarPath(me.avatarPath || '');
       } catch (error) {
         // keep local values
@@ -44,6 +45,10 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
   }, []);
 
   const handleSave = async () => {
+    if (!isDepartmentOption(department)) {
+      alert('Please select a department from the list.');
+      return;
+    }
     setSaving(true);
     try {
       const res = await api.put('/api/users/me', {
@@ -51,7 +56,6 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
         lastName,
         phone,
         department,
-        position,
       });
       const user = res.data?.user;
       if (user) {
@@ -60,6 +64,7 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
           role: user.role,
           email: user.email,
           avatarPath: user.avatarPath || avatarPath || '',
+          department: user.department || department,
         };
         localStorage.setItem('authUser', JSON.stringify(nextAuthUser));
         if (typeof onUserUpdated === 'function') {
@@ -165,7 +170,7 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
             )}
           </div>
           <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px', textAlign: 'center' }}>{firstName} {lastName}</div>
-          <div style={{ color: '#6b7a99', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>{position}{department ? ` · ${department}` : ''}</div>
+          <div style={{ color: '#6b7a99', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>{displayRole}{department ? ` · ${department}` : ''}</div>
           <input
             ref={avatarInputRef}
             type="file"
@@ -213,7 +218,29 @@ const ProfilePage = ({ onUserUpdated } = {}) => {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>Department</label>
-              <input type="text" value={department} onChange={(e) => setDepartment(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }} />
+              <select
+                value={isDepartmentOption(department) ? department : ''}
+                onChange={(e) => setDepartment(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '14px',
+                  background: 'white',
+                }}
+              >
+                <option value="">-- Select department --</option>
+                {department && !isDepartmentOption(department) && (
+                  <option value={department}>{department} (current — choose from list)</option>
+                )}
+                {DEPARTMENT_OPTIONS.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <button

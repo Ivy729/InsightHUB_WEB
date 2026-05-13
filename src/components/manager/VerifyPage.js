@@ -1,9 +1,42 @@
 import React from 'react';
+import axios from 'axios';
+import { API_BASE_URL } from '../../apiConfig';
 
-const VerifyPage = ({ evidenceList, onVerifyEvidence, evidenceError }) => {
-
+const VerifyPage = ({ evidenceList, onVerifyEvidence, evidenceError, onEvidenceDownloaded }) => {
   const verifyEvidence = (id, action) => {
     onVerifyEvidence(id, action);
+  };
+
+  const downloadEvidence = async (item) => {
+    if (item.downloadConsumed) return;
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      alert('Missing login token. Please sign in again.');
+      return;
+    }
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/api/manager/evidence/${item.id}/download`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      const { fileUrl, originalFileName } = res.data || {};
+      if (!fileUrl) {
+        alert('No file data returned.');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      a.download = originalFileName || item.evidence || 'evidence';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if (typeof onEvidenceDownloaded === 'function') {
+        onEvidenceDownloaded();
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Download failed.';
+      alert(msg);
+    }
   };
 
   return (
@@ -93,22 +126,30 @@ const VerifyPage = ({ evidenceList, onVerifyEvidence, evidenceError }) => {
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.staff}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.kpi}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>
-                  <button
-                    type="button"
-                    style={{
-                      color: '#1a3a5c',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <i className="bi bi-download me-1"></i>{item.evidence}
-                  </button>
+                  {item.downloadConsumed ? (
+                    <span style={{ fontSize: '13px', color: '#6b7a99' }}>
+                      <i className="bi bi-lock me-1"></i>
+                      Downloaded
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => downloadEvidence(item)}
+                      style={{
+                        color: '#1a3a5c',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <i className="bi bi-download me-1"></i>{item.evidence}
+                    </button>
+                  )}
                 </td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>{item.submitted}</td>
                 <td style={{ padding: '13px 14px', fontSize: '14px' }}>

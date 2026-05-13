@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
 
-const ManagerTopbar = ({ pageTitle, userName = 'Manager User', onNotificationClick }) => {
+const ManagerTopbar = ({ pageTitle, userName = 'Manager User', avatarSrc = null, onNotificationClick }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -363,9 +363,19 @@ const ManagerTopbar = ({ pageTitle, userName = 'Manager User', onNotificationCli
           fontWeight: 700,
           fontSize: '14px',
           color: 'white',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          overflow: 'hidden',
         }}>
-          {initials}
+          {avatarSrc ? (
+            <img
+              key={avatarSrc}
+              src={avatarSrc}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            initials
+          )}
         </div>
       </div>
     </div>

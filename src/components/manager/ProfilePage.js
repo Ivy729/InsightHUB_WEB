@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../apiConfig';
+import { DEPARTMENT_OPTIONS, isDepartmentOption } from '../../constants/departments';
 
-const ProfilePage = () => {
+const ProfilePage = ({ onUserUpdated } = {}) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [position, setPosition] = useState('');
+  const [displayRole, setDisplayRole] = useState('Manager');
   const [department, setDepartment] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,7 @@ const ProfilePage = () => {
         setLastName(user.lastName || nameParts.slice(1).join(' ') || '');
         setEmail(user.email || '');
         setPhone(user.phone || '');
-        setPosition(user.position || '');
+        setDisplayRole(String(user.role || '').toLowerCase() === 'manager' ? 'Manager' : 'Staff');
         setDepartment(user.department || '');
         setProfilePhoto(user.profilePhoto || '');
         setError('');
@@ -81,6 +82,10 @@ const ProfilePage = () => {
       setError('First name and email are required.');
       return;
     }
+    if (!isDepartmentOption(department)) {
+      setError('Please select a department from the list.');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -95,7 +100,6 @@ const ProfilePage = () => {
           lastName: lastName.trim(),
           email,
           phone,
-          position,
           department,
           profilePhoto,
         },
@@ -105,7 +109,12 @@ const ProfilePage = () => {
       );
 
       const updatedUser = response.data.user;
-      localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      if (updatedUser) {
+        localStorage.setItem('authUser', JSON.stringify(updatedUser));
+        if (typeof onUserUpdated === 'function') {
+          onUserUpdated(updatedUser);
+        }
+      }
       setMessage('Profile changes saved successfully.');
     } catch (requestError) {
       if (requestError.response?.status === 409) {
@@ -199,7 +208,7 @@ const ProfilePage = () => {
             {fullName || 'Manager User'}
           </div>
           <div style={{ color: '#6b7a99', fontSize: '12px', marginBottom: '12px', textAlign: 'center' }}>
-            {position || 'Manager'}
+            {displayRole}
           </div>
           <input
             type="file"
@@ -307,30 +316,10 @@ const ProfilePage = () => {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
-                Position
-              </label>
-              <input
-                type="text"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
                 Department
               </label>
-              <input
-                type="text"
-                value={department}
+              <select
+                value={isDepartmentOption(department) ? department : ''}
                 onChange={(e) => setDepartment(e.target.value)}
                 disabled={loading}
                 style={{
@@ -339,9 +328,20 @@ const ProfilePage = () => {
                   border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  background: loading ? '#f4f6fb' : 'white',
                 }}
-              />
+              >
+                <option value="">-- Select department --</option>
+                {department && !isDepartmentOption(department) && (
+                  <option value={department}>{department} (current — choose from list)</option>
+                )}
+                {DEPARTMENT_OPTIONS.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

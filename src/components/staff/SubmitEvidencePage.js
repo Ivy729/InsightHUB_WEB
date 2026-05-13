@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apiClient';
 import { API_BASE_URL } from '../../apiConfig';
+import {
+  acceptAttributeForEvidenceType,
+  DEFAULT_EVIDENCE_TYPE,
+  EVIDENCE_TYPE_LABELS,
+  fileAllowedForEvidenceType,
+} from '../../constants/evidenceFileTypes';
+import {
+  approvedKpiIdsFromEvidenceApiRows,
+  excludeKpisWithApprovedEvidenceAt100,
+} from '../../utils/staffKpiEvidenceFilter';
 
 const SubmitEvidencePage = ({ kpis = [] }) => {
   const [file, setFile] = useState(null);
@@ -8,16 +18,35 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
   const fileInputRef = useRef(null);
   const [selectedKpiId, setSelectedKpiId] = useState('');
   const [manualKpiTitle, setManualKpiTitle] = useState('');
-  const [evidenceType, setEvidenceType] = useState('Document (PDF/Word)');
+  const [evidenceType, setEvidenceType] = useState(DEFAULT_EVIDENCE_TYPE);
   const [notes, setNotes] = useState('');
   const [history, setHistory] = useState([]);
+  const [approvedEvidenceKpiIds, setApprovedEvidenceKpiIds] = useState(() => new Set());
   const [submitting, setSubmitting] = useState(false);
 
-  const kpiOptions = useMemo(() => kpis || [], [kpis]);
+  const kpiOptions = useMemo(
+    () => excludeKpisWithApprovedEvidenceAt100(kpis, approvedEvidenceKpiIds),
+    [kpis, approvedEvidenceKpiIds]
+  );
+
+  const selectedKpi = useMemo(
+    () => (selectedKpiId ? kpiOptions.find((k) => String(k.id) === String(selectedKpiId)) : null),
+    [kpiOptions, selectedKpiId]
+  );
+
+  const canSubmitEvidence = useMemo(() => {
+    if (!kpiOptions.length || !selectedKpi) return false;
+    return Number(selectedKpi.progress) >= 100;
+  }, [kpiOptions.length, selectedKpi]);
 
   useEffect(() => {
-    if (!selectedKpiId && kpiOptions.length > 0) {
-      setSelectedKpiId(kpiOptions[0].id);
+    if (kpiOptions.length === 0) {
+      setSelectedKpiId('');
+      return;
+    }
+    const stillThere = kpiOptions.some((k) => String(k.id) === String(selectedKpiId));
+    if (!selectedKpiId || !stillThere) {
+      setSelectedKpiId(String(kpiOptions[0].id));
     }
   }, [kpiOptions, selectedKpiId]);
 
@@ -25,17 +54,30 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
     try {
       const res = await api.get('/api/staff/evidence/my-evidence');
       const rows = Array.isArray(res.data) ? res.data : [];
+      setApprovedEvidenceKpiIds(approvedKpiIdsFromEvidenceApiRows(rows));
       setHistory(
-        rows.map((row) => ({
-          _id: row._id,
-          kpiTitle: row.kpiId?.title || 'KPI',
-          status: String(row.status || 'pending').replace(/^\w/, (c) => c.toUpperCase()),
-          createdAt: row.submittedAt || row.createdAt,
-          file: {
-            originalName: row.originalFileName || 'Evidence',
-            path: row.fileUrl && String(row.fileUrl).startsWith('http') ? row.fileUrl : null,
-          },
-        }))
+        rows.map((row) => {
+          const kpiRef = row.kpiId;
+          const kpiIdStr =
+            kpiRef && typeof kpiRef === 'object' && kpiRef._id != null
+              ? String(kpiRef._id)
+              : kpiRef != null
+                ? String(kpiRef)
+                : '';
+          const statusRaw = String(row.status || 'pending').toLowerCase();
+          return {
+            _id: row._id,
+            kpiIdStr,
+            kpiTitle: (kpiRef && typeof kpiRef === 'object' && kpiRef.title) || 'KPI',
+            status: statusRaw.replace(/^\w/, (c) => c.toUpperCase()),
+            statusRaw,
+            createdAt: row.submittedAt || row.createdAt,
+            file: {
+              originalName: row.originalFileName || 'Evidence',
+              path: row.fileUrl && String(row.fileUrl).startsWith('http') ? row.fileUrl : null,
+            },
+          };
+        })
       );
     } catch (error) {
       setHistory([]);
@@ -44,13 +86,31 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
 
   useEffect(() => {
     loadHistory();
-  }, []);
+  }, [kpis]);
+
+  const fileAccept = useMemo(
+    () => acceptAttributeForEvidenceType(evidenceType),
+    [evidenceType]
+  );
+
+  useEffect(() => {
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [evidenceType]);
 
   const validateAndSetFile = (selectedFile) => {
     if (!selectedFile) return;
     const maxSizeBytes = 10 * 1024 * 1024; // 10MB
     if (selectedFile.size > maxSizeBytes) {
       alert('File is too large. Maximum allowed size is 10MB.');
+      return;
+    }
+    if (!fileAllowedForEvidenceType(selectedFile, evidenceType)) {
+      alert(
+        `That file type does not match "${evidenceType}". Pick another file or change the evidence type.`
+      );
       return;
     }
     setFile(selectedFile);
@@ -71,6 +131,12 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
   const handleSubmitEvidence = async () => {
     if (!file) {
       alert('Please upload a file before submitting evidence.');
+      return;
+    }
+    if (Array.isArray(kpis) && kpis.length > 0 && kpiOptions.length === 0) {
+      alert(
+        'No KPIs are available for new evidence. KPIs at 100% with approved evidence are removed from this list.'
+      );
       return;
     }
     const hasAssignedKpis = kpiOptions.length > 0;
@@ -96,6 +162,18 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
       return;
     }
 
+    if (Number(selectedKpi.progress) < 100) {
+      alert('You must reach 100% progress on this KPI (Update Progress) before you can submit evidence.');
+      return;
+    }
+
+    if (!fileAllowedForEvidenceType(file, evidenceType)) {
+      alert(
+        `The selected file does not match "${evidenceType}". Choose a matching file or change the evidence type.`
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       const dataUrl = await new Promise((resolve, reject) => {
@@ -109,6 +187,7 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
         kpiId: selectedKpi?.id || undefined,
         fileUrl: dataUrl,
         originalFileName: file.name,
+        evidenceType,
         staffNotes: [notes, evidenceType ? `Type: ${evidenceType}` : ''].filter(Boolean).join('\n'),
       });
 
@@ -137,7 +216,22 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
         <div style={{ padding: '18px 22px' }}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>KPI</label>
-            {kpiOptions.length === 0 ? (
+            {(kpis || []).length > 0 && kpiOptions.length === 0 ? (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(29,184,122,0.1)',
+                  border: '1px solid rgba(29,184,122,0.25)',
+                  color: '#0f5132',
+                  fontSize: '13px',
+                  lineHeight: 1.45,
+                }}
+              >
+                There are no KPIs to submit evidence for. KPIs that are at <strong>100%</strong> and already have{' '}
+                <strong>approved</strong> evidence are hidden here.
+              </div>
+            ) : kpiOptions.length === 0 ? (
               <input
                 type="text"
                 value={manualKpiTitle}
@@ -153,12 +247,29 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
               >
                 {kpiOptions.map((kpi) => (
                   <option key={kpi.id} value={kpi.id}>
-                    {kpi.title}
+                    {kpi.title} ({Number(kpi.progress) || 0}%)
                   </option>
                 ))}
               </select>
             )}
           </div>
+
+          {kpiOptions.length > 0 && selectedKpi && !canSubmitEvidence ? (
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: 'rgba(232,160,32,0.12)',
+                color: '#9a6b1a',
+                fontSize: '13px',
+                lineHeight: 1.45,
+              }}
+            >
+              Complete this KPI to <strong>100%</strong> on <strong>Update Progress</strong> before you can submit evidence.
+              Current progress: <strong>{Number(selectedKpi.progress) || 0}%</strong>.
+            </div>
+          ) : null}
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Evidence Type</label>
@@ -167,21 +278,23 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
               onChange={(e) => setEvidenceType(e.target.value)}
               style={{ width: '100%', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}
             >
-              <option>Document (PDF/Word)</option>
-              <option>Image</option>
-              <option>Certificate</option>
-              <option>Screenshot</option>
+              {EVIDENCE_TYPE_LABELS.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Upload File</label>
             <input
+              key={evidenceType}
               ref={fileInputRef}
               type="file"
               onChange={handleFileChange}
               style={{ display: 'none' }}
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.xlsx,.xls"
+              accept={fileAccept}
             />
             <div
               onClick={() => fileInputRef.current && fileInputRef.current.click()}
@@ -225,8 +338,9 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
           </div>
 
           <button
+            type="button"
             onClick={handleSubmitEvidence}
-            disabled={submitting}
+            disabled={submitting || !canSubmitEvidence}
             style={{
               background: '#1a3a5c',
               color: 'white',
@@ -235,12 +349,12 @@ const SubmitEvidencePage = ({ kpis = [] }) => {
               padding: '8px 16px',
               fontSize: '13px',
               fontWeight: 600,
-              cursor: submitting ? 'not-allowed' : 'pointer',
+              cursor: submitting || !canSubmitEvidence ? 'not-allowed' : 'pointer',
               fontFamily: "'DM Sans', sans-serif",
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              opacity: submitting ? 0.7 : 1,
+              opacity: submitting || !canSubmitEvidence ? 0.55 : 1,
             }}
           >
             <i className="bi bi-upload"></i> {submitting ? 'Submitting…' : 'Submit Evidence'}

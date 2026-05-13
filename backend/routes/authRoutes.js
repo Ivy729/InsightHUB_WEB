@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const { authenticateJWT } = require("../middleware/auth");
+const { isAllowedDepartment } = require("../constants/allowedDepartments");
 
 const router = express.Router();
 const RESET_CODE_TTL_MS = 10 * 60 * 1000;
@@ -64,7 +65,7 @@ const sendResetCodeEmail = async (toEmail, code) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role, phone, position, department, profilePhoto } =
+    const { name, email, password, role, phone, department, profilePhoto } =
       req.body;
 
     if (!name || !email || !password) {
@@ -73,9 +74,20 @@ router.post("/register", async (req, res) => {
         .json({ message: "Name, email, and password are required" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const resolvedRole =
+      String(role || "").trim().toLowerCase() === "manager" ? "manager" : "staff";
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({ message: "Email already registered" });
+    }
+
+    const departmentTrim = String(department || "").trim();
+    if (!isAllowedDepartment(departmentTrim)) {
+      return res.status(400).json({
+        message: "Please select a valid department from the list.",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -86,13 +98,12 @@ router.post("/register", async (req, res) => {
       name: trimmedName,
       firstName,
       lastName,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
-      role: role || "staff",
-      phone: phone || "",
-      position: position || "",
-      department: department || "",
-      profilePhoto: profilePhoto || "",
+      role: resolvedRole,
+      phone: String(phone || "").trim(),
+      department: departmentTrim,
+      profilePhoto: String(profilePhoto || "").trim(),
     });
 
     const token = jwt.sign(
@@ -112,7 +123,6 @@ router.post("/register", async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone || "",
-        position: user.position || "",
         department: user.department || "",
         profilePhoto: user.profilePhoto || "",
       },
@@ -124,12 +134,21 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, intendedRole: intendedBody } = req.body;
 
     if (!email || !password) {
       return res
         .status(400)
         .json({ message: "Email and password are required" });
+    }
+
+    const intendedRole = String(intendedBody || "")
+      .trim()
+      .toLowerCase();
+    if (intendedRole !== "manager" && intendedRole !== "staff") {
+      return res.status(400).json({
+        message: "Choose Manager or Staff to match your account before signing in.",
+      });
     }
 
     const user = await User.findOne({ email: email.trim().toLowerCase() });
@@ -142,8 +161,17 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    const rawRole = String(user.role || "").toLowerCase();
+    const resolvedRole = rawRole === "manager" ? "manager" : "staff";
+
+    if (intendedRole !== resolvedRole) {
+      return res.status(403).json({
+        message: `This account is registered as ${resolvedRole}. Select "${resolvedRole}" to sign in.`,
+      });
+    }
+
     const token = jwt.sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, role: resolvedRole },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -159,9 +187,8 @@ router.post("/login", async (req, res) => {
         firstName: user.firstName || loginNameParts.firstName,
         lastName: user.lastName || loginNameParts.lastName,
         email: user.email,
-        role: user.role,
+        role: resolvedRole,
         phone: user.phone || "",
-        position: user.position || "",
         department: user.department || "",
         profilePhoto: user.profilePhoto || "",
       },
@@ -179,6 +206,8 @@ router.get("/me", authenticateJWT, async (req, res) => {
     }
 
     const nameParts = splitDisplayName(user.name);
+    const resolvedRole =
+      String(user.role || "").toLowerCase() === "manager" ? "manager" : "staff";
 
     return res.status(200).json({
       id: user._id,
@@ -186,9 +215,8 @@ router.get("/me", authenticateJWT, async (req, res) => {
       firstName: user.firstName || nameParts.firstName,
       lastName: user.lastName || nameParts.lastName,
       email: user.email,
-      role: user.role,
+      role: resolvedRole,
       phone: user.phone || "",
-      position: user.position || "",
       department: user.department || "",
       profilePhoto: user.profilePhoto || "",
     });
@@ -205,7 +233,6 @@ router.put("/me", authenticateJWT, async (req, res) => {
       lastName: bodyLastName,
       email,
       phone,
-      position,
       department,
       profilePhoto,
     } = req.body;
@@ -236,21 +263,31 @@ router.put("/me", authenticateJWT, async (req, res) => {
       return res.status(409).json({ message: "Email already in use" });
     }
 
+    const deptTrim = String(department || "").trim();
+    if (!isAllowedDepartment(deptTrim)) {
+      return res.status(400).json({
+        message: "Please select a valid department from the list.",
+      });
+    }
+
     const updates = {
       name: fullName,
       firstName,
       lastName,
       email: normalizedEmail,
       phone: String(phone || "").trim(),
-      position: String(position || "").trim(),
-      department: String(department || "").trim(),
+      department: deptTrim,
       profilePhoto: String(profilePhoto || "").trim(),
     };
 
-    const updatedUser = await User.findByIdAndUpdate(req.user.userId, updates, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: updates, $unset: { position: "" } },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password");
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -268,7 +305,6 @@ router.put("/me", authenticateJWT, async (req, res) => {
         email: updatedUser.email,
         role: updatedUser.role,
         phone: updatedUser.phone || "",
-        position: updatedUser.position || "",
         department: updatedUser.department || "",
         profilePhoto: updatedUser.profilePhoto || "",
       },

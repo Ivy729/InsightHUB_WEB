@@ -13,7 +13,6 @@ const StaffPage = ({ staffList, setStaffList }) => {
     lastName: '',
     department: '',
     email: '',
-    password: '',
     phone: ''
   });
 
@@ -430,25 +429,6 @@ const StaffModal = ({ title, formData, setFormData, onSave, onClose }) => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block' }}>
-                Password *
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Enter password (required for add new staff)"
                 style={{
                   width: '100%',
                   padding: '10px',

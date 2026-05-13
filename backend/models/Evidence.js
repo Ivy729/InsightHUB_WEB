@@ -20,6 +20,8 @@ const evidenceSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    /** First manager download time; further downloads are blocked. */
+    managerDownloadedAt: { type: Date, default: null },
     submittedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

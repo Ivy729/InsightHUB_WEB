@@ -67,7 +67,11 @@ const DashboardPage = ({ userName = 'Staff User', kpis = [] }) => {
               deadline={kpi.deadline || '-'}
               progress={Number(kpi.progress) || 0}
               status={kpi.status}
-              achievement={`Target: ${kpi.target ?? '-'}`}
+              achievement={
+                kpi.taskSteps?.length
+                  ? `${kpi.taskSteps.length} task step${kpi.taskSteps.length === 1 ? '' : 's'}`
+                  : `Target: ${kpi.target ?? '—'}`
+              }
             />
           ))
         )}
@@ -106,12 +110,13 @@ const StatCard = ({ icon, color, value, label }) => {
 
 const KpiCard = ({ title, category, deadline, progress, status, achievement }) => {
   const statusColors = {
+    pending: { border: '#94a3b8', badge: 'rgba(107,122,153,0.12)', text: '#6b7a99', bar: '#94a3b8' },
     'in-progress': { border: '#e8a020', badge: 'rgba(232,160,32,0.12)', text: '#f5a623', bar: '#e8a020' },
-    'achieved': { border: '#1db87a', badge: 'rgba(29,184,122,0.12)', text: '#1db87a', bar: '#1db87a' },
-    'overdue': { border: '#e53e3e', badge: 'rgba(229,62,62,0.1)', text: '#e53e3e', bar: '#e53e3e' }
+    achieved: { border: '#1db87a', badge: 'rgba(29,184,122,0.12)', text: '#1db87a', bar: '#1db87a' },
+    overdue: { border: '#e53e3e', badge: 'rgba(229,62,62,0.1)', text: '#e53e3e', bar: '#e53e3e' },
   };
 
-  const colors = statusColors[status] || statusColors['in-progress'];
+  const colors = statusColors[status] || statusColors.pending;
 
   return (
     <div style={{ border: `1px solid #e2e8f0`, borderLeft: `4px solid ${colors.border}`, borderRadius: '12px', padding: '16px', background: 'white' }}>
@@ -134,7 +139,13 @@ const KpiCard = ({ title, category, deadline, progress, status, achievement }) =
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12px', color: '#6b7a99', gap: '8px' }}>
         <span>{achievement}</span>
         <span style={{ background: colors.badge, color: colors.text, padding: '3px 10px', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-          {status === 'in-progress' ? 'In Progress' : status === 'achieved' ? 'Achieved' : 'Overdue'}
+          {status === 'pending'
+            ? 'Pending'
+            : status === 'in-progress'
+              ? 'In Progress'
+              : status === 'achieved'
+                ? 'Achieved'
+                : 'Overdue'}
         </span>
       </div>
     </div>

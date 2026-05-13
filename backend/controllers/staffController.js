@@ -1,25 +1,47 @@
 const User = require("../models/User");
 const Kpi = require("../models/Kpi");
-const bcrypt = require("bcryptjs");
+const { getManagerScope } = require("../utils/managerScope");
 
-// Get all staff members (for manager view)
+function isKpiCompleted(k) {
+  if (String(k.status || "").toLowerCase() === "achieved") return true;
+  const p = Number(k.progress) || 0;
+  if (p >= 100) return true;
+  const steps = Array.isArray(k.taskSteps)
+    ? k.taskSteps.map((s) => String(s || "").trim()).filter(Boolean)
+    : [];
+  if (steps.length > 0) {
+    const done = (Array.isArray(k.taskStepDone) ? k.taskStepDone : []).filter(Boolean).length;
+    return done >= steps.length;
+  }
+  const t = Number(k.target) || 0;
+  return t > 0 && p >= t;
+}
+
+// Get staff members in the same department as the logged-in manager
 exports.getAllStaff = async (req, res) => {
   try {
-    // Fetch all users with role 'staff'
-    const staffMembers = await User.find({ role: "staff" }).select("-password");
+    const scope = await getManagerScope(req.user.userId);
+    if (!scope.ok) {
+      return res.status(scope.status).json({ message: scope.message });
+    }
 
-    // Enrich staff data with KPI information
+    const staffMembers = await User.find({
+      role: "staff",
+      department: scope.department,
+    }).select("-password");
+
     const enrichedStaff = await Promise.all(
       staffMembers.map(async (staff) => {
         const staffName = staff.name || "";
         const normalizedStaffName = staffName.trim();
-        const kpis = await Kpi.find({ staff: new RegExp(`^${escapeRegExp(normalizedStaffName)}$`, 'i') });
+        const kpis = await Kpi.find({
+          staff: new RegExp(`^${escapeRegExp(normalizedStaffName)}$`, "i"),
+        });
         const totalKpis = kpis.length;
 
-        const completedKpis = kpis.filter(
-          (k) => k.status === 'achieved' || (k.target > 0 && k.progress >= k.target)
-        ).length;
-        const completionRate = totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
+        const completedKpis = kpis.filter((k) => isKpiCompleted(k)).length;
+        const completionRate =
+          totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
 
         const splitFromName = (full) => {
           const p = String(full || "")
@@ -39,7 +61,6 @@ exports.getAllStaff = async (req, res) => {
           fullName: staff.name,
           email: staff.email,
           department: staff.department || "N/A",
-          position: staff.position || "N/A",
           phone: staff.phone || "",
           kpis: totalKpis,
           completion: completionRate,
@@ -57,11 +78,11 @@ exports.getAllStaff = async (req, res) => {
   }
 };
 
-// Update staff member
+// Update staff member (same department as manager only)
 exports.updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, department, position, phone } = req.body;
+    const { firstName, lastName, email, department, phone } = req.body;
 
     if (!firstName || !lastName || !email) {
       return res
@@ -69,9 +90,28 @@ exports.updateStaff = async (req, res) => {
         .json({ message: "First name, last name, and email are required" });
     }
 
-    // Check if new email is already used by another user
+    const scope = await getManagerScope(req.user.userId);
+    if (!scope.ok) {
+      return res.status(scope.status).json({ message: scope.message });
+    }
+
+    const target = await User.findById(id).select("-password");
+    if (!target || target.role !== "staff") {
+      return res.status(404).json({ message: "Staff member not found" });
+    }
+    if (String(target.department || "").trim() !== scope.department) {
+      return res.status(403).json({ message: "You can only manage staff in your department." });
+    }
+
+    const nextDept = String(department || "").trim();
+    if (nextDept !== scope.department) {
+      return res.status(403).json({
+        message: `Staff must remain in your department (${scope.department}).`,
+      });
+    }
+
     const existingUser = await User.findOne({
-      email,
+      email: String(email).trim().toLowerCase(),
       _id: { $ne: id },
     });
     if (existingUser) {
@@ -83,13 +123,15 @@ exports.updateStaff = async (req, res) => {
     const updatedStaff = await User.findByIdAndUpdate(
       id,
       {
-        name: `${firstName} ${lastName}`.trim(),
-        firstName,
-        lastName,
-        email,
-        department: department || "",
-        position: position || "",
-        phone: phone || "",
+        $set: {
+          name: `${firstName} ${lastName}`.trim(),
+          firstName,
+          lastName,
+          email: String(email).trim().toLowerCase(),
+          department: scope.department,
+          phone: phone || "",
+        },
+        $unset: { position: "" },
       },
       { new: true }
     ).select("-password");
@@ -98,14 +140,14 @@ exports.updateStaff = async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    // Get KPI info for this staff
     const staffName = updatedStaff.name || "";
-    const staffKpis = await Kpi.find({ staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, 'i') });
+    const staffKpis = await Kpi.find({
+      staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, "i"),
+    });
     const totalKpis = staffKpis.length;
-    const completedKpis = staffKpis.filter(
-      (k) => k.status === 'achieved' || (k.target > 0 && k.progress >= k.target)
-    ).length;
-    const completionRate = totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
+    const completedKpis = staffKpis.filter((k) => isKpiCompleted(k)).length;
+    const completionRate =
+      totalKpis > 0 ? Math.round((completedKpis / totalKpis) * 100) : 0;
 
     res.status(200).json({
       message: "Staff member updated successfully",
@@ -116,7 +158,6 @@ exports.updateStaff = async (req, res) => {
         fullName: updatedStaff.name,
         email: updatedStaff.email,
         department: updatedStaff.department || "N/A",
-        position: updatedStaff.position || "N/A",
         phone: updatedStaff.phone || "",
         kpis: totalKpis,
         completion: completionRate,
@@ -129,21 +170,29 @@ exports.updateStaff = async (req, res) => {
   }
 };
 
-// Delete staff member
+// Delete staff member (same department only)
 exports.deleteStaff = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedStaff = await User.findByIdAndDelete(id);
-
-    if (!deletedStaff) {
-      return res.status(404).json({ message: "Staff member not found" });
+    const scope = await getManagerScope(req.user.userId);
+    if (!scope.ok) {
+      return res.status(scope.status).json({ message: scope.message });
     }
 
-    // Optionally, you can also unassign KPIs associated with this staff member
+    const deletedStaff = await User.findById(id);
+    if (!deletedStaff || deletedStaff.role !== "staff") {
+      return res.status(404).json({ message: "Staff member not found" });
+    }
+    if (String(deletedStaff.department || "").trim() !== scope.department) {
+      return res.status(403).json({ message: "You can only manage staff in your department." });
+    }
+
+    await User.findByIdAndDelete(id);
+
     const staffName = deletedStaff.name || "";
     await Kpi.updateMany(
-      { staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, 'i') },
+      { staff: new RegExp(`^${escapeRegExp(staffName.trim())}$`, "i") },
       { staff: "" }
     );
 
@@ -157,14 +206,19 @@ exports.deleteStaff = async (req, res) => {
   }
 };
 
-// Helper function to escape regex special characters
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Helper function to generate a consistent color from email
 function generateColorFromEmail(email) {
-  const colors = ["#1db87a", "#e8a020", "#e53e3e", "#3b82f6", "#9b59b6", "#16a085"];
+  const colors = [
+    "#1db87a",
+    "#e8a020",
+    "#e53e3e",
+    "#3b82f6",
+    "#9b59b6",
+    "#16a085",
+  ];
   const hash = (email || "").split("").reduce((acc, char) => {
     return acc + char.charCodeAt(0);
   }, 0);

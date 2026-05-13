@@ -5,6 +5,7 @@ const fs = require("fs");
 const multer = require("multer");
 const User = require("../models/User");
 const { requireAuth } = require("../middleware/auth");
+const { isAllowedDepartment } = require("../constants/allowedDepartments");
 
 const router = express.Router();
 
@@ -71,7 +72,6 @@ router.put("/me", requireAuth, async (req, res) => {
     const lastName = String(req.body.lastName || "").trim();
     const phone = String(req.body.phone || "").trim();
     const department = String(req.body.department || "").trim();
-    const position = String(req.body.position || "").trim();
 
     if (!firstName || !lastName) {
       return res
@@ -79,11 +79,17 @@ router.put("/me", requireAuth, async (req, res) => {
         .json({ message: "First name and last name are required" });
     }
 
+    if (!isAllowedDepartment(department)) {
+      return res.status(400).json({
+        message: "Please select a valid department from the list.",
+      });
+    }
+
     const name = `${firstName} ${lastName}`.trim();
 
     const updated = await User.findByIdAndUpdate(
       req.user._id,
-      { firstName, lastName, name, phone, department, position },
+      { $set: { firstName, lastName, name, phone, department }, $unset: { position: "" } },
       { new: true }
     ).select("-password");
 

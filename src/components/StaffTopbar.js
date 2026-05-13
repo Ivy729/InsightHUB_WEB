@@ -278,6 +278,7 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User', avatarPath = '', noti
         }}>
           {avatarPath ? (
             <img
+              key={avatarPath}
               src={`${API_BASE_URL}${avatarPath}`}
               alt="Avatar"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}

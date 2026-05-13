@@ -12,6 +12,8 @@ const getAuthUser = () => {
   }
 };
 
+const normalizeRole = (value) => String(value || '').toLowerCase();
+
 const RequireRole = ({ role, children }) => {
   const authUser = getAuthUser();
 
@@ -19,8 +21,11 @@ const RequireRole = ({ role, children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (authUser.role !== role) {
-    return authUser.role === 'manager'
+  const userRole = normalizeRole(authUser.role);
+  const required = normalizeRole(role);
+
+  if (userRole !== required) {
+    return userRole === 'manager'
       ? <Navigate to="/dashboard-manager" replace />
       : <Navigate to="/dashboard-staff" replace />;
   }
@@ -31,7 +36,7 @@ const RequireRole = ({ role, children }) => {
 const PublicLoginRoute = ({ children }) => {
   const authUser = getAuthUser();
   if (!authUser) return children;
-  return authUser.role === 'manager'
+  return normalizeRole(authUser.role) === 'manager'
     ? <Navigate to="/dashboard-manager" replace />
     : <Navigate to="/dashboard-staff" replace />;
 };

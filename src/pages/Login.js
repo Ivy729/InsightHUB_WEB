@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/login.css';
 import { API_BASE_URL } from '../apiConfig';
+import { DEPARTMENT_OPTIONS as REGISTRATION_DEPARTMENTS } from '../constants/departments';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Login = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
   const [regRole, setRegRole] = useState('staff');
+  const [regDepartment, setRegDepartment] = useState('');
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
   const [regErrors, setRegErrors] = useState({});
@@ -33,6 +35,13 @@ const Login = () => {
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
   const verifyInputRefs = useRef([]);
+  /** Masked + plain inputs avoid toggling `type` on one node (Chromium often keeps bullets). */
+  const loginPasswordMaskedRef = useRef(null);
+  const loginPasswordPlainRef = useRef(null);
+  const regPasswordMaskedRef = useRef(null);
+  const regPasswordPlainRef = useRef(null);
+  const regConfirmMaskedRef = useRef(null);
+  const regConfirmPlainRef = useRef(null);
 
   const platformHighlights = [
     'Real-time KPI tracking and monitoring',
@@ -80,10 +89,6 @@ const Login = () => {
     setActiveTab(tab);
   };
 
-  const toggleVisibility = (setter) => {
-    setter((prev) => !prev);
-  };
-
   const clearFieldError = (fieldName) => {
     setRegErrors(prev => {
       const updated = { ...prev };
@@ -92,10 +97,50 @@ const Login = () => {
     });
   };
 
+  const toggleLoginPasswordVisible = () => {
+    if (!showLoginPassword) {
+      const el = loginPasswordMaskedRef.current;
+      if (el) setLoginPassword(el.value);
+    } else {
+      const el = loginPasswordPlainRef.current;
+      if (el) setLoginPassword(el.value);
+    }
+    setShowLoginPassword((prev) => !prev);
+  };
+
+  const toggleRegPasswordVisible = () => {
+    if (!showRegPassword) {
+      const el = regPasswordMaskedRef.current;
+      if (el) setRegPassword(el.value);
+    } else {
+      const el = regPasswordPlainRef.current;
+      if (el) setRegPassword(el.value);
+    }
+    setShowRegPassword((prev) => !prev);
+  };
+
+  const toggleRegConfirmVisible = () => {
+    if (!showRegConfirm) {
+      const el = regConfirmMaskedRef.current;
+      if (el) setRegConfirm(el.value);
+    } else {
+      const el = regConfirmPlainRef.current;
+      if (el) setRegConfirm(el.value);
+    }
+    setShowRegConfirm((prev) => !prev);
+  };
+
   const doLogin = async () => {
     setLoginError('');
 
-    if (!loginUsername.trim() || !loginPassword) {
+    const passwordForLogin = String(
+      loginPassword
+        || loginPasswordMaskedRef.current?.value
+        || loginPasswordPlainRef.current?.value
+        || ''
+    ).trim();
+
+    if (!loginUsername.trim() || !passwordForLogin) {
       setLoginError('Please enter both email and password.');
       return;
     }
@@ -106,7 +151,8 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: loginUsername.trim(),
-          password: loginPassword,
+          password: passwordForLogin,
+          intendedRole: selectedRole,
         }),
       });
 
@@ -117,10 +163,23 @@ const Login = () => {
         return;
       }
 
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('authUser', JSON.stringify(data.user));
+      const actualRole = String(data.user?.role || '').toLowerCase();
+      if (actualRole !== 'staff' && actualRole !== 'manager') {
+        setLoginError('This account has an invalid role. Please contact support.');
+        return;
+      }
 
-      if (data.user.role === 'staff') {
+      if (String(selectedRole).toLowerCase() !== actualRole) {
+        setLoginError(
+          `This account is a ${actualRole} account. Select "${actualRole === 'staff' ? 'Staff' : 'Manager'}" under Sign in as, then try again.`
+        );
+        return;
+      }
+
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('authUser', JSON.stringify({ ...data.user, role: actualRole }));
+
+      if (actualRole === 'staff') {
         navigate('/dashboard-staff');
       } else {
         navigate('/dashboard-manager');
@@ -134,14 +193,28 @@ const Login = () => {
     setRegError('');
     setRegErrors({});
 
+    const passwordValue = String(
+      regPassword
+        || regPasswordMaskedRef.current?.value
+        || regPasswordPlainRef.current?.value
+        || ''
+    ).trim();
+    const confirmValue = String(
+      regConfirm
+        || regConfirmMaskedRef.current?.value
+        || regConfirmPlainRef.current?.value
+        || ''
+    ).trim();
+
     const errors = {};
 
     if (!regFirstName.trim()) errors.firstName = true;
     if (!regLastName.trim()) errors.lastName = true;
     if (!regPhone.trim()) errors.phone = true;
+    if (!regDepartment.trim()) errors.department = true;
     if (!regEmail.trim()) errors.email = true;
-    if (!regPassword.trim()) errors.password = true;
-    if (!regConfirm.trim()) errors.confirm = true;
+    if (!passwordValue) errors.password = true;
+    if (!confirmValue) errors.confirm = true;
 
     if (Object.keys(errors).length > 0) {
       setRegErrors(errors);
@@ -157,13 +230,13 @@ const Login = () => {
       return;
     }
 
-    if (regPassword.length < 8) {
+    if (passwordValue.length < 8) {
       setRegErrors({ password: true });
       setRegError('Password must be at least 8 characters long.');
       return;
     }
 
-    if (regPassword !== regConfirm) {
+    if (passwordValue !== confirmValue) {
       setRegErrors({ password: true, confirm: true });
       setRegError('Passwords do not match.');
       return;
@@ -175,8 +248,10 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: `${regFirstName.trim()} ${regLastName.trim()}`.trim(),
-          email: regEmail.trim(),
-          password: regPassword,
+          email: emailValue,
+          password: passwordValue,
+          phone: regPhone.trim(),
+          department: regDepartment.trim(),
           role: regRole,
         }),
       });
@@ -212,6 +287,7 @@ const Login = () => {
     setRegPassword('');
     setRegConfirm('');
     setRegRole('staff');
+    setRegDepartment('');
   };
 
   const clearForgotState = () => {
@@ -440,6 +516,7 @@ const Login = () => {
                     type="text"
                     className="form-control"
                     placeholder="user@example.com"
+                    autoComplete="username"
                     value={loginUsername}
                     onChange={(e) => {
                       setLoginUsername(e.target.value);
@@ -450,28 +527,60 @@ const Login = () => {
 
                 <div className="mb-4">
                   <label className="form-label">Password</label>
-                  <div style={{ position: 'relative' }}>
+                  <div className="password-input-wrap" style={{ position: 'relative' }}>
                     <input
-                      type={showLoginPassword ? 'text' : 'password'}
+                      ref={loginPasswordMaskedRef}
+                      type="password"
                       className="form-control"
                       placeholder="••••••••"
+                      autoComplete="current-password"
+                      spellCheck={false}
                       value={loginPassword}
                       onChange={(e) => {
                         setLoginPassword(e.target.value);
                         if (loginError) setLoginError('');
                       }}
+                      onInput={(e) => {
+                        setLoginPassword(e.target.value);
+                        if (loginError) setLoginError('');
+                      }}
+                      style={{ display: showLoginPassword ? 'none' : 'block' }}
                     />
-                    <i
-                      className={`bi ${showLoginPassword ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => toggleVisibility(setShowLoginPassword)}
-                      style={{ cursor: 'pointer' }}
-                    ></i>
+                    <input
+                      ref={loginPasswordPlainRef}
+                      type="text"
+                      className="form-control"
+                      placeholder="Password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      value={loginPassword}
+                      onChange={(e) => {
+                        setLoginPassword(e.target.value);
+                        if (loginError) setLoginError('');
+                      }}
+                      onInput={(e) => {
+                        setLoginPassword(e.target.value);
+                        if (loginError) setLoginError('');
+                      }}
+                      style={{ display: showLoginPassword ? 'block' : 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="input-eye-btn"
+                      aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={toggleLoginPasswordVisible}
+                    >
+                      <i className={`bi ${showLoginPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden />
+                    </button>
                   </div>
                 </div>
 
                 <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#1a2233', display: 'block', marginBottom: '10px' }}>
-                    Sign in as:
+                    Sign in as (must match your account):
                   </label>
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
@@ -610,23 +719,74 @@ const Login = () => {
                 </div>
 
                 <div className="mb-3">
+                  <label className={`form-label ${getLabelErrorClass('department')}`}>Department</label>
+                  <select
+                    className={`form-select ${getFieldErrorClass('department')}`}
+                    value={regDepartment}
+                    onChange={(e) => {
+                      setRegDepartment(e.target.value);
+                      clearFieldError('department');
+                    }}
+                  >
+                    <option value="">-- Select department --</option>
+                    {REGISTRATION_DEPARTMENTS.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-3">
                   <label className={`form-label ${getLabelErrorClass('password')}`}>Password</label>
-                  <div style={{ position: 'relative' }}>
+                  <div className="password-input-wrap" style={{ position: 'relative' }}>
                     <input
-                      type={showRegPassword ? 'text' : 'password'}
+                      ref={regPasswordMaskedRef}
+                      type="password"
                       className={`form-control ${getFieldErrorClass('password')}`}
                       placeholder="••••••••"
+                      autoComplete="new-password"
+                      spellCheck={false}
                       value={regPassword}
                       onChange={(e) => {
                         setRegPassword(e.target.value);
                         clearFieldError('password');
                       }}
+                      onInput={(e) => {
+                        setRegPassword(e.target.value);
+                        clearFieldError('password');
+                      }}
+                      style={{ display: showRegPassword ? 'none' : 'block' }}
                     />
-                    <i
-                      className={`bi ${showRegPassword ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => toggleVisibility(setShowRegPassword)}
-                      style={{ cursor: 'pointer' }}
-                    ></i>
+                    <input
+                      ref={regPasswordPlainRef}
+                      type="text"
+                      className={`form-control ${getFieldErrorClass('password')}`}
+                      placeholder="Password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      value={regPassword}
+                      onChange={(e) => {
+                        setRegPassword(e.target.value);
+                        clearFieldError('password');
+                      }}
+                      onInput={(e) => {
+                        setRegPassword(e.target.value);
+                        clearFieldError('password');
+                      }}
+                      style={{ display: showRegPassword ? 'block' : 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="input-eye-btn"
+                      aria-label={showRegPassword ? 'Hide password' : 'Show password'}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={toggleRegPasswordVisible}
+                    >
+                      <i className={`bi ${showRegPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden />
+                    </button>
                   </div>
                   <div style={{ fontSize: '11px', color: '#1db87a', marginTop: '4px' }}>
                     {regPassword.length >= 8 ? '✓ Password length looks good' : `${regPassword.length}/8 characters`}
@@ -635,22 +795,54 @@ const Login = () => {
 
                 <div className="mb-3">
                   <label className={`form-label ${getLabelErrorClass('confirm')}`}>Confirm password</label>
-                  <div style={{ position: 'relative' }}>
+                  <div className="password-input-wrap" style={{ position: 'relative' }}>
                     <input
-                      type={showRegConfirm ? 'text' : 'password'}
+                      ref={regConfirmMaskedRef}
+                      type="password"
                       className={`form-control ${getFieldErrorClass('confirm')}`}
                       placeholder="••••••••"
+                      autoComplete="new-password"
+                      spellCheck={false}
                       value={regConfirm}
                       onChange={(e) => {
                         setRegConfirm(e.target.value);
                         clearFieldError('confirm');
                       }}
+                      onInput={(e) => {
+                        setRegConfirm(e.target.value);
+                        clearFieldError('confirm');
+                      }}
+                      style={{ display: showRegConfirm ? 'none' : 'block' }}
                     />
-                    <i
-                      className={`bi ${showRegConfirm ? 'bi-eye-slash' : 'bi-eye'} input-eye`}
-                      onClick={() => toggleVisibility(setShowRegConfirm)}
-                      style={{ cursor: 'pointer' }}
-                    ></i>
+                    <input
+                      ref={regConfirmPlainRef}
+                      type="text"
+                      className={`form-control ${getFieldErrorClass('confirm')}`}
+                      placeholder="Confirm password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      value={regConfirm}
+                      onChange={(e) => {
+                        setRegConfirm(e.target.value);
+                        clearFieldError('confirm');
+                      }}
+                      onInput={(e) => {
+                        setRegConfirm(e.target.value);
+                        clearFieldError('confirm');
+                      }}
+                      style={{ display: showRegConfirm ? 'block' : 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="input-eye-btn"
+                      aria-label={showRegConfirm ? 'Hide password' : 'Show password'}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={toggleRegConfirmVisible}
+                    >
+                      <i className={`bi ${showRegConfirm ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden />
+                    </button>
                   </div>
                 </div>
 

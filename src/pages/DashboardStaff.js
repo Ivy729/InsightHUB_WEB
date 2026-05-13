@@ -43,7 +43,7 @@ const DashboardStaff = () => {
       navigate('/login');
       return;
     }
-    if (parsedUser.role !== 'staff') {
+    if (String(parsedUser.role || '').toLowerCase() !== 'staff') {
       navigate('/login');
       return;
     }
@@ -108,9 +108,11 @@ const DashboardStaff = () => {
           })
           .map((kpi) => {
             const progress = Number(kpi.progress) || 0;
-            let status = 'in-progress';
+            let status = 'pending';
 
-            if (kpi.deadline) {
+            if (progress >= 100) {
+              status = 'achieved';
+            } else if (kpi.deadline) {
               const deadlineDate = new Date(kpi.deadline);
               deadlineDate.setHours(23, 59, 59, 999);
               const today = new Date();
@@ -118,25 +120,51 @@ const DashboardStaff = () => {
 
               if (deadlineDate < today && progress < 100) {
                 status = 'overdue';
-              } else if (progress >= 100) {
-                status = 'achieved';
               } else if (progress > 0) {
                 status = 'in-progress';
               }
-            } else if (progress >= 100) {
-              status = 'achieved';
             } else if (progress > 0) {
               status = 'in-progress';
             }
 
+            const taskSteps = Array.isArray(kpi.taskSteps)
+              ? kpi.taskSteps.map((s) => String(s || '').trim()).filter(Boolean)
+              : [];
+            let taskStepDone = Array.isArray(kpi.taskStepDone)
+              ? kpi.taskStepDone.map(Boolean)
+              : [];
+            while (taskStepDone.length < taskSteps.length) taskStepDone.push(false);
+            taskStepDone = taskStepDone.slice(0, taskSteps.length);
+
+            const startRaw = kpi.startDate != null ? String(kpi.startDate) : '';
+
             return {
               id: kpi._id,
               title: kpi.title || 'Untitled KPI',
-              subtitle: 'Assigned KPI',
-              category: 'General',
-              target: String(kpi.target ?? '-'),
+              subtitle: kpi.desc ? String(kpi.desc).slice(0, 120) : 'Assigned KPI',
+              category: kpi.dept || 'General',
+              target:
+                taskSteps.length > 0
+                  ? `${taskSteps.length} step(s)`
+                  : String(kpi.target ?? '—'),
+              taskSteps,
+              taskStepDone,
+              desc: String(kpi.desc || ''),
+              dept: String(kpi.dept || ''),
+              staffAssigned: String(kpi.staff || ''),
+              startDate: startRaw
+                ? (() => {
+                    try {
+                      return new Date(startRaw).toLocaleDateString();
+                    } catch {
+                      return startRaw;
+                    }
+                  })()
+                : '—',
+              startDateRaw: startRaw,
               progress,
-              deadline: kpi.deadline ? new Date(kpi.deadline).toLocaleDateString() : '-',
+              deadline: kpi.deadline ? new Date(kpi.deadline).toLocaleDateString() : '—',
+              deadlineRaw: kpi.deadline || null,
               status,
             };
           });
@@ -154,7 +182,16 @@ const DashboardStaff = () => {
 
     fetchUserAndKpis();
     const interval = setInterval(fetchUserAndKpis, 60000);
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUserAndKpis();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [navigate]);
 
   const showPage = (pageId) => {

@@ -1,21 +1,24 @@
 import React from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { getEffectiveKpiStatus } from '../../utils/getEffectiveKpiStatus';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const DashboardPage = ({ kpiList }) => {
   const totalKpis = kpiList.length;
-  const achievedKpis = kpiList.filter(k => k.status === 'achieved').length;
-  const inProgressKpis = kpiList.filter(k => k.status === 'in-progress').length;
-  const overdueKpis = kpiList.filter(k => k.status === 'overdue').length;
+  const achievedKpis = kpiList.filter((k) => getEffectiveKpiStatus(k) === 'achieved').length;
+  const inProgressKpis = kpiList.filter((k) => getEffectiveKpiStatus(k) === 'in-progress').length;
+  const overdueKpis = kpiList.filter((k) => getEffectiveKpiStatus(k) === 'overdue').length;
 
   const activeKpis = [...kpiList]
-    .filter(kpi => kpi.status !== 'achieved')
+    .filter((kpi) => getEffectiveKpiStatus(kpi) !== 'achieved')
     .sort((a, b) => {
       const priority = { overdue: 0, 'in-progress': 1, pending: 2 };
-      const statusA = priority[a.status] !== undefined ? a.status : 'pending';
-      const statusB = priority[b.status] !== undefined ? b.status : 'pending';
+      const effA = getEffectiveKpiStatus(a);
+      const effB = getEffectiveKpiStatus(b);
+      const statusA = priority[effA] !== undefined ? effA : 'pending';
+      const statusB = priority[effB] !== undefined ? effB : 'pending';
       if (statusA !== statusB) {
         return priority[statusA] - priority[statusB];
       }
@@ -257,7 +260,7 @@ const DashboardPage = ({ kpiList }) => {
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>{kpi.dept}</td>
                   <td style={{ padding: '13px 14px', fontSize: '14px' }}>
                     {(() => {
-                      const statusStyle = getStatusPillStyle(kpi.status);
+                      const statusStyle = getStatusPillStyle(getEffectiveKpiStatus(kpi));
                       return (
                     <span style={{
                       display: 'inline-block',

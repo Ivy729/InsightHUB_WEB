@@ -4,8 +4,10 @@ const kpiSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     desc: { type: String, default: "" },
-    target: { type: Number, required: true },
+    target: { type: Number, default: 0 },
     progress: { type: Number, default: 0 },
+    taskSteps: { type: [String], default: [] },
+    taskStepDone: { type: [Boolean], default: [] },
     status: {
       type: String,
       enum: ["pending", "in-progress", "achieved", "overdue"],

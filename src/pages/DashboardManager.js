@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
@@ -11,6 +11,8 @@ import VerifyPage from '../components/manager/VerifyPage';
 import StaffPage from '../components/manager/StaffPage';
 import ProfilePage from '../components/manager/ProfilePage';
 import SettingsPage from '../components/manager/SettingsPage';
+import { resolveUserAvatarSrc } from '../utils/resolveUserAvatarSrc';
+import { getEffectiveKpiStatus } from '../utils/getEffectiveKpiStatus';
 
 const DashboardManager = () => {
   const navigate = useNavigate();
@@ -21,7 +23,14 @@ const DashboardManager = () => {
   const [apiError, setApiError] = useState('');
   const [evidenceError, setEvidenceError] = useState('');
   const [evidenceList, setEvidenceList] = useState([]);
-  const [currentUser, setCurrentUser] = useState({ name: 'Manager User', role: 'manager' });
+  const [currentUser, setCurrentUser] = useState({
+    name: 'Manager User',
+    role: 'manager',
+    profilePhoto: '',
+    avatarPath: '',
+  });
+
+  const managerAvatarSrc = useMemo(() => resolveUserAvatarSrc(currentUser), [currentUser]);
 
   const pageTitles = {
     dashboard: 'Dashboard',
@@ -49,41 +58,35 @@ const DashboardManager = () => {
     } catch (error) {
       console.error('Error fetching staff:', error);
       setStaffList([]);
+      const msg = error.response?.data?.message;
+      if (msg) setApiError(msg);
     }
   };
 
   const fetchKpis = async () => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setKpiList([]);
+      setApiError('Missing login token. Please sign in again.');
+      return;
+    }
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/kpis`);
+      const response = await axios.get(`${API_BASE_URL}/api/kpis`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       const mappedKpis = response.data.map((kpi) => {
-        const targetValue = Number(kpi.target) || 0;
         const progressValue = Number(kpi.progress) || 0;
-        
-        // Determine status based on progress and deadline
-        let status = kpi.status || 'in-progress';
-        
-        // Check if deadline has passed (use end of day for comparison)
-        if (kpi.deadline) {
-          const deadlineDate = new Date(kpi.deadline);
-          // Set to end of day (23:59:59)
-          deadlineDate.setHours(23, 59, 59, 999);
-          
-          const today = new Date();
-          // Set today to start of day
-          today.setHours(0, 0, 0, 0);
-          
-          if (deadlineDate < today && progressValue < 100) {
-            status = 'overdue';
-          } else if (progressValue >= 100) {
-            status = 'achieved';
-          } else if (progressValue > 0) {
-            status = 'in-progress';
-          }
-        } else if (progressValue >= 100) {
-          status = 'achieved';
-        } else if (progressValue > 0) {
-          status = 'in-progress';
-        }
+        const taskSteps = Array.isArray(kpi.taskSteps)
+          ? kpi.taskSteps.map((s) => String(s || '').trim()).filter(Boolean)
+          : [];
+        let taskStepDone = Array.isArray(kpi.taskStepDone) ? kpi.taskStepDone.map(Boolean) : [];
+        while (taskStepDone.length < taskSteps.length) taskStepDone.push(false);
+        taskStepDone = taskStepDone.slice(0, taskSteps.length);
+
+        const status = getEffectiveKpiStatus(kpi);
 
         return {
           _id: kpi._id,
@@ -91,18 +94,30 @@ const DashboardManager = () => {
           desc: kpi.desc || '',
           staff: kpi.staff || 'Unassigned',
           dept: kpi.dept || 'N/A',
-          target: String(kpi.target ?? '-'),
+          taskSteps,
+          taskStepDone,
+          owner: String(kpi.owner || '').trim() || '—',
+          target:
+            taskSteps.length > 0
+              ? `${taskSteps.length} step(s)`
+              : String(kpi.target ?? '-'),
+          targetNum: Number(kpi.target) || 0,
           startDate: kpi.startDate || '-',
           deadline: kpi.deadline || '-',
           status,
-          progress: progressValue
+          progress: progressValue,
+          createdAt: kpi.createdAt,
+          updatedAt: kpi.updatedAt,
         };
       });
 
       setKpiList(mappedKpis);
       setApiError('');
     } catch (error) {
-      setApiError('Failed to load KPIs from backend API.');
+      const msg = error.response?.data?.message;
+      setApiError(
+        msg || 'Failed to load KPIs from backend API.'
+      );
       setKpiList([]);
     }
   };
@@ -131,6 +146,7 @@ const DashboardManager = () => {
           ? new Date(item.submittedAt).toLocaleDateString()
           : '-',
         status: item.status,
+        downloadConsumed: Boolean(item.managerDownloadConsumed),
       }));
 
       setEvidenceList(mappedEvidence);
@@ -153,7 +169,7 @@ const DashboardManager = () => {
       navigate('/login');
       return;
     }
-    if (parsedUser.role !== 'manager') {
+    if (String(parsedUser.role || '').toLowerCase() !== 'manager') {
       navigate('/login');
       return;
     }
@@ -161,6 +177,8 @@ const DashboardManager = () => {
     setCurrentUser({
       name: parsedUser.name || 'Manager User',
       role: parsedUser.role || 'manager',
+      profilePhoto: parsedUser.profilePhoto || '',
+      avatarPath: parsedUser.avatarPath || '',
     });
 
     fetchStaff();
@@ -194,6 +212,7 @@ const DashboardManager = () => {
           .filter((item) => item.status === 'pending')
       );
       setEvidenceError('');
+      await fetchKpis();
     } catch (error) {
       setEvidenceError('Failed to verify evidence. Please try again.');
     }
@@ -222,12 +241,26 @@ const DashboardManager = () => {
             evidenceList={evidenceList}
             onVerifyEvidence={handleVerifyEvidence}
             evidenceError={evidenceError}
+            onEvidenceDownloaded={fetchEvidenceQueue}
           />
         );
       case 'staff':
-        return <StaffPage staffList={staffList} setStaffList={setStaffList} kpiList={kpiList} setKpiList={setKpiList} />;
+        return <StaffPage staffList={staffList} setStaffList={setStaffList} />;
       case 'profile':
-        return <ProfilePage />;
+        return (
+          <ProfilePage
+            onUserUpdated={(u) => {
+              if (!u) return;
+              setCurrentUser((prev) => ({
+                ...prev,
+                name: u.name ?? prev.name,
+                role: u.role ?? prev.role,
+                profilePhoto: u.profilePhoto != null ? u.profilePhoto : prev.profilePhoto,
+                avatarPath: u.avatarPath != null ? u.avatarPath : prev.avatarPath,
+              }));
+            }}
+          />
+        );
       case 'settings':
         return <SettingsPage />;
       default:
@@ -250,9 +283,15 @@ const DashboardManager = () => {
         pendingEvidenceCount={evidenceList.length}
         userName={currentUser.name}
         userRole={currentUser.role}
+        avatarSrc={managerAvatarSrc}
       />
       <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <Topbar pageTitle={pageTitle} userName={currentUser.name} onNotificationClick={handleNotificationClick} />
+        <Topbar
+          pageTitle={pageTitle}
+          userName={currentUser.name}
+          avatarSrc={managerAvatarSrc}
+          onNotificationClick={handleNotificationClick}
+        />
         <div style={{ padding: '26px 28px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {apiError && (
             <div style={{

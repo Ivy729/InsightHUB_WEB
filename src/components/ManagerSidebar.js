@@ -1,6 +1,14 @@
 import React from 'react';
 
-const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCount = 0, userName = 'Manager User', userRole = 'manager' }) => {
+const ManagerSidebar = ({
+  currentPage,
+  showPage,
+  handleLogout,
+  pendingEvidenceCount = 0,
+  userName = 'Manager User',
+  userRole = 'manager',
+  avatarSrc = null,
+}) => {
   const initials = userName
     .split(' ')
     .filter(Boolean)
@@ -156,9 +164,19 @@ const ManagerSidebar = ({ currentPage, showPage, handleLogout, pendingEvidenceCo
             fontWeight: 700,
             fontSize: '14px',
             color: 'white',
-            flexShrink: 0
+            flexShrink: 0,
+            overflow: 'hidden',
           }}>
-            {initials}
+            {avatarSrc ? (
+              <img
+                key={avatarSrc}
+                src={avatarSrc}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              initials
+            )}
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>
