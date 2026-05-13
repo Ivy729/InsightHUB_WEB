@@ -5,6 +5,7 @@ const path = require("path");
 const connectDB = require("./config/db");
 const kpiRoutes = require("./routes/kpiRoutes");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const evidenceRoutes = require("./routes/evidenceRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const staffRoutes = require("./routes/staffRoutes");
@@ -34,12 +35,15 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
+
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/manager", evidenceRoutes);
 app.use("/api/manager/notifications", notificationRoutes);
 app.use("/api/staff", staffRoutes);
-app.use("/api/staff/evidence", staffEvidenceRoutes); 
+app.use("/api/staff/evidence", staffEvidenceRoutes);
 app.use("/api/staff/notifications", staffNotificationRoutes);
 
 app.get("/api/health", (req, res) => {

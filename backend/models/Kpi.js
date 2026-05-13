@@ -15,7 +15,7 @@ const kpiSchema = new mongoose.Schema(
     staff: { type: String, default: "" },
     dept: { type: String, default: "" },
     startDate: { type: String, default: "" },
-    deadline: { type: String, default: "" },
+    deadline: { type: mongoose.Schema.Types.Mixed, default: null },
     notifiedOverdue: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -62,8 +62,6 @@ kpiSchema.pre("save", function () {
   else if (progress === 0) {
     this.status = "pending";
   }
-
-  
 });
 
 module.exports = mongoose.model("Kpi", kpiSchema);

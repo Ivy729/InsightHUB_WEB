@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema(
     position: { type: String, default: "", trim: true },
     department: { type: String, default: "", trim: true },
     profilePhoto: { type: String, default: "" },
+    settings: {
+      timeFormat: { type: String, enum: ["12h", "24h"], default: "12h" },
+    },
+    avatarPath: { type: String, default: "" },
     passwordResetCodeHash: { type: String, default: null },
     passwordResetExpiresAt: { type: Date, default: null },
   },

@@ -23,7 +23,7 @@ const notificationSchema = new mongoose.Schema(
         "kpi-overdue",
         "pending-evidence",
         "evidence-approved",
-        "evidence-rejected"
+        "evidence-rejected",
       ],
       required: true,
     },

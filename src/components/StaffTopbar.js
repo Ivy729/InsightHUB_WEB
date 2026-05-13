@@ -1,96 +1,83 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
+import { api } from '../apiClient';
 
-const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
+const StaffTopbar = ({ pageTitle, userName = 'Staff User', avatarPath = '', notifications = [] }) => {
   const [showNotif, setShowNotif] = useState(false);
   const [expandedNotifId, setExpandedNotifId] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const notifWrapRef = useRef(null);
+  const [notifItems, setNotifItems] = useState([]);
 
-  const fetchNotifications = async () => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/staff/notifications`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      setNotifications(response.data || []);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+  useEffect(() => {
+    setNotifItems(Array.isArray(notifications) ? notifications : []);
+  }, [notifications]);
+
+  const markRead = (item) => {
+    const id = item?._id || item?.id;
+    setNotifItems((prev) => prev.map((n) => ((n._id || n.id) === id ? { ...n, unread: false } : n)));
+    if (item?._id) {
+      api.put(`/api/staff/notifications/${item._id}/read`).catch(() => {});
     }
   };
 
-  const toggleNotif = () => {
-    const nextShow = !showNotif;
-    setShowNotif(nextShow);
-    if (!nextShow) setExpandedNotifId(null);
-    if (nextShow) fetchNotifications();
+  const markAllRead = () => {
+    setNotifItems((prev) => prev.map((n) => ({ ...n, unread: false })));
+    api.put(`/api/staff/notifications/read-all`).catch(() => {});
   };
 
-  const markRead = async (id) => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
-    try {
-      await axios.put(`${API_BASE_URL}/api/staff/notifications/${id}/read`, {}, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
-    } catch (error) {
-      console.error('Failed to mark read:', error);
-    }
-  };
-
-  const markAllRead = async () => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) return;
-    try {
-      await axios.put(`${API_BASE_URL}/api/staff/notifications/read-all`, {}, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    } catch (error) {
-      console.error('Failed to mark all read:', error);
-    }
-  };
-
-  const toggleExpandedNotif = (id) => {
-    setExpandedNotifId(prev => prev === id ? null : id);
-  };
-
-  const hasUnread = notifications.some(n => !n.read);
+  const hasUnread = notifItems.some(n => n.unread);
   const initials = userName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map((n) => n[0].toUpperCase())
+    .map((name) => name.charAt(0).toUpperCase())
     .join('') || 'SU';
 
+  const toggleNotif = () => {
+    setShowNotif(!showNotif);
+    if (showNotif) {
+      setExpandedNotifId(null);
+    }
+  };
+
+  const toggleExpandedNotif = (id) => {
+    setExpandedNotifId(prev => (prev === id ? null : id));
+  };
+
+  const getColorClass = (type) => {
+    const colors = {
+      success: { bg: 'rgba(29,184,122,0.2)', color: '#1db87a' },
+      danger: { bg: 'rgba(229,62,62,0.2)', color: '#e53e3e' },
+      warning: { bg: 'rgba(232,160,32,0.2)', color: '#e8a020' },
+      primary: { bg: 'rgba(26,58,92,0.2)', color: '#1a3a5c' }
+    };
+    return colors[type] || colors.primary;
+  };
+
+  const getIconClass = (type, text) => {
+    const t = String(text || '').toLowerCase();
+    if (t.includes('due')) return 'bi-calendar-event';
+    if (t.includes('overdue')) return 'bi-exclamation-triangle';
+    if (t.includes('evidence')) return 'bi-upload';
+    if (type === 'success') return 'bi-check-lg';
+    if (type === 'danger') return 'bi-exclamation-triangle';
+    if (type === 'warning') return 'bi-clock-history';
+    return 'bi-bell';
+  };
+
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
     const handleClickOutside = (event) => {
       if (notifWrapRef.current && !notifWrapRef.current.contains(event.target)) {
         setShowNotif(false);
         setExpandedNotifId(null);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      clearInterval(interval);
     };
   }, []);
-
-  // Map action types to display titles and icons (staff‑oriented)
-  const actionTypeMap = {
-    'evidence-approved': { title: 'Evidence Approved', icon: 'bi-check-circle-fill', color: '#1db87a' },
-    'evidence-rejected': { title: 'Evidence Rejected', icon: 'bi-x-circle-fill', color: '#e53e3e' },
-    'evidence-submitted': { title: 'Evidence Submitted', icon: 'bi-file-earmark-check-fill', color: '#1a3a5c' },
-    'progress-updated': { title: 'Progress Updated', icon: 'bi-arrow-repeat', color: '#e8a020' },
-    'kpi-completed': { title: 'KPI Completed', icon: 'bi-trophy-fill', color: '#1db87a' },
-    'kpi-overdue': { title: 'KPI Overdue', icon: 'bi-exclamation-triangle-fill', color: '#e53e3e' },
-  };
 
   return (
     <div style={{
@@ -104,7 +91,12 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
       top: 0,
       zIndex: 50
     }}>
-      <div style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', color: '#1a2233', fontWeight: 700 }}>
+      <div style={{
+        fontFamily: "'Fraunces', serif",
+        fontSize: '20px',
+        color: '#1a2233',
+        fontWeight: 700
+      }}>
         {pageTitle}
       </div>
 
@@ -128,25 +120,25 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
         >
           <i className="bi bi-bell" style={{ fontSize: '18px' }}></i>
           {hasUnread && (
-            <div style={{
+            <span style={{
               position: 'absolute',
-              top: '7px',
-              right: '7px',
-              width: '7px',
-              height: '7px',
+              top: '8px',
+              right: '8px',
+              width: '8px',
+              height: '8px',
               background: '#e53e3e',
               borderRadius: '50%'
-            }}></div>
+            }}></span>
           )}
         </div>
 
-        {/* Notification Panel */}
+        {/* Notification Dropdown */}
         {showNotif && (
           <div style={{
             position: 'absolute',
             top: '58px',
             right: '28px',
-            width: '360px',
+            width: '340px',
             background: 'white',
             border: '1px solid #e2e8f0',
             borderRadius: '14px',
@@ -157,10 +149,12 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
               padding: '14px 18px',
               borderBottom: '1px solid #e2e8f0',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700 }}>Notifications</span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700 }}>
+                Notifications
+              </span>
               <button
                 onClick={markAllRead}
                 style={{
@@ -176,111 +170,94 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
               </button>
             </div>
 
-            <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
-              {notifications.length === 0 ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7a99', fontSize: '13px' }}>
-                  No notifications
-                </div>
-              ) : (
-                notifications.map(notif => {
-                  const mapping = actionTypeMap[notif.actionType] || {};
-                  const title = mapping.title || 'Notification';
-                  const icon = mapping.icon || 'bi-bell-fill';
-                  const badgeColor = mapping.color || '#1a3a5c';
-                  const timeLabel = notif.createdAt
-                    ? new Date(notif.createdAt).toLocaleString()
-                    : 'Just now';
-
-                  return (
-                    <div
-                      key={notif._id}
-                      style={{
-                        padding: '14px 18px',
-                        borderBottom: '1px solid #e2e8f0',
-                        background: notif.read ? 'white' : 'rgba(26,58,92,0.03)',
-                        display: 'flex',
-                        gap: '12px',
-                        alignItems: 'flex-start',
-                        flexDirection: 'column'
-                      }}
-                    >
-                      <div
-                        onClick={() => toggleExpandedNotif(notif._id)}
-                        style={{
-                          cursor: 'pointer',
-                          display: 'flex',
-                          gap: '12px',
-                          alignItems: 'flex-start',
-                          width: '100%'
-                        }}
-                      >
-                        <div style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '50%',
-                          background: `${badgeColor}22`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
-                          <i className={`bi ${icon}`} style={{ color: badgeColor, fontSize: '14px' }}></i>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            fontWeight: notif.read ? 500 : 700,
-                            fontSize: '13px',
-                            color: notif.read ? '#6b7a99' : '#1a3a5c'
-                          }}>
-                            {title}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#6b7a99', marginTop: '2px' }}>
-                            {notif.message}
-                          </div>
-                          {notif.kpiTitle && (
-                            <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '6px' }}>
-                              {notif.kpiTitle}
-                            </div>
-                          )}
-                          <div style={{ fontSize: '11px', color: '#6b7a99', marginTop: '4px' }}>
-                            {timeLabel}
-                          </div>
-                        </div>
-                        {!notif.read && (
-                          <div style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: '#1a3a5c',
-                            marginTop: '4px'
-                          }}></div>
-                        )}
+            {notifItems.length === 0 && (
+              <div style={{ padding: '14px 18px', fontSize: '13px', color: '#6b7a99' }}>
+                No notifications yet.
+              </div>
+            )}
+            {notifItems.map(item => {
+              const rowId = item?._id || item?.id;
+              const color = getColorClass(item.type);
+              return (
+                <div
+                  key={rowId}
+                  style={{
+                    padding: '12px 18px',
+                    borderBottom: '1px solid #e2e8f0',
+                    background: item.unread ? 'rgba(26,58,92,0.03)' : 'white',
+                    display: 'flex',
+                    gap: '12px',
+                    alignItems: 'flex-start',
+                    flexDirection: 'column'
+                  }}
+                >
+                  <div
+                    onClick={() => toggleExpandedNotif(rowId)}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      gap: '12px',
+                      alignItems: 'flex-start',
+                      width: '100%'
+                    }}
+                  >
+                    <div style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      background: color.bg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <i className={`bi ${getIconClass(item.type, item.text)}`} style={{ color: color.color, fontSize: '14px' }}></i>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontWeight: item.unread ? 700 : 500,
+                        fontSize: '13px'
+                      }}>
+                        {item.text}
                       </div>
-                      {expandedNotifId === notif._id && !notif.read && (
-                        <div style={{ paddingLeft: '46px' }}>
-                          <button
-                            type="button"
-                            onClick={() => markRead(notif._id)}
-                            style={{
-                              fontSize: '12px',
-                              color: 'white',
-                              background: '#1a3a5c',
-                              border: 'none',
-                              borderRadius: '6px',
-                              padding: '6px 10px',
-                              cursor: 'pointer',
-                              fontFamily: "'DM Sans', sans-serif"
-                            }}
-                          >
-                            Mark as read
-                          </button>
-                        </div>
+                      <div style={{ fontSize: '12px', color: '#6b7a99' }}>
+                        {item.sub}
+                      </div>
+                    </div>
+                    {item.unread && (
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#1a3a5c'
+                      }}></div>
+                    )}
+                  </div>
+                  {expandedNotifId === rowId && (
+                    <div style={{ paddingLeft: '46px' }}>
+                      {item.unread && (
+                        <button
+                          type="button"
+                          onClick={() => markRead(item)}
+                          style={{
+                            fontSize: '12px',
+                            color: 'white',
+                            background: '#1a3a5c',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 10px',
+                            cursor: 'pointer',
+                            fontFamily: "'DM Sans', sans-serif"
+                          }}
+                        >
+                          Mark as read
+                        </button>
                       )}
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -296,9 +273,18 @@ const StaffTopbar = ({ pageTitle, userName = 'Staff User' }) => {
           fontWeight: 700,
           fontSize: '14px',
           color: 'white',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          overflow: 'hidden'
         }}>
-          {initials}
+          {avatarPath ? (
+            <img
+              src={`${API_BASE_URL}${avatarPath}`}
+              alt="Avatar"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            initials
+          )}
         </div>
       </div>
     </div>
