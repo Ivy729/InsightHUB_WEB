@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { api } from '../../apiClient';
 
 const SettingsPage = () => {
   const [use24Hour, setUse24Hour] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const getTimePreview = () => {
     const now = new Date();
@@ -15,7 +17,7 @@ const SettingsPage = () => {
     }
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       alert('Please fill in all password fields');
       return;
@@ -31,10 +33,24 @@ const SettingsPage = () => {
       return;
     }
 
-    alert('Password updated successfully!');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setSavingPassword(true);
+    try {
+      await api.put('/api/users/me/password', {
+        currentPassword,
+        newPassword,
+      });
+      alert('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+          'Failed to update password. Please try again.'
+      );
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -275,6 +291,7 @@ const SettingsPage = () => {
 
           <button
             onClick={handleUpdatePassword}
+            disabled={savingPassword}
             style={{
               background: '#1a3a5c',
               color: 'white',
@@ -283,14 +300,15 @@ const SettingsPage = () => {
               padding: '8px 16px',
               fontSize: '13px',
               fontWeight: 600,
-              cursor: 'pointer',
+              cursor: savingPassword ? 'not-allowed' : 'pointer',
               fontFamily: "'DM Sans', sans-serif",
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              opacity: savingPassword ? 0.7 : 1,
             }}
           >
-            <i className="bi bi-shield-lock"></i> Update Password
+            <i className="bi bi-shield-lock"></i> {savingPassword ? 'Updating…' : 'Update Password'}
           </button>
         </div>
       </div>
