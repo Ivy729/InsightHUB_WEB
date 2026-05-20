@@ -13,13 +13,17 @@ const staffEvidenceRoutes = require("./routes/staffEvidenceRoutes");
 const staffNotificationRoutes = require("./routes/staffNotificationRoutes");
 const progressHistoryRoutes = require("./routes/progressHistoryRoutes");
 
-dotenv.config({
-  path: path.resolve(__dirname, ".env"),
-  override: true,
-});
+// On Vercel, env vars come from the dashboard — do not load/override from backend/.env
+if (!process.env.VERCEL) {
+  dotenv.config({
+    path: path.resolve(__dirname, ".env"),
+    override: true,
+  });
+}
 
-console.log("ENV PATH:", path.resolve(__dirname, ".env"));
-console.log("MONGO:", process.env.MONGODB_URI);
+if (!process.env.VERCEL) {
+  console.log("ENV PATH:", path.resolve(__dirname, ".env"));
+}
 
 if (!process.env.MONGODB_URI) {
   const mongoMsg = "MONGODB_URI is missing. Check backend/.env";
@@ -53,7 +57,18 @@ app.use("/api/staff/notifications", staffNotificationRoutes);
 app.use("/api/staff/progress-history", progressHistoryRoutes);
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, message: "Backend running" });
+  const smtpConfigured = Boolean(
+    (process.env.SMTP_HOST || "").trim() &&
+      (process.env.SMTP_USER || "").trim() &&
+      (process.env.SMTP_PASS || "").trim() &&
+      (process.env.SMTP_FROM || "").trim()
+  );
+  res.json({
+    ok: true,
+    message: "Backend running",
+    smtpConfigured,
+    runtime: process.env.VERCEL ? "vercel" : "node",
+  });
 });
 
 module.exports = { app };
