@@ -55,9 +55,13 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Database middleware error:", error.message);
+    const clientMessage =
+      process.env.VERCEL || process.env.NODE_ENV === "production"
+        ? "Database unavailable. Check MONGODB_URI on the server (must be one mongodb:// or mongodb+srv:// line only)."
+        : error.message;
     res.status(503).json({
       message: "Database unavailable",
-      error: error.message,
+      error: clientMessage,
     });
   }
 });

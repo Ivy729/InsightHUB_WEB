@@ -6,6 +6,7 @@ const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const { authenticateJWT } = require("../middleware/auth");
 const { isAllowedDepartment } = require("../constants/allowedDepartments");
+const { clientErrorMessage } = require("../utils/clientErrorMessage");
 
 const router = express.Router();
 const RESET_CODE_TTL_MS = 10 * 60 * 1000;
@@ -129,7 +130,7 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -195,7 +196,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -222,7 +223,7 @@ router.get("/me", authenticateJWT, async (req, res) => {
       profilePhoto: user.profilePhoto || "",
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -311,7 +312,7 @@ router.put("/me", authenticateJWT, async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -341,7 +342,7 @@ router.post("/forgot-password", async (req, res) => {
     });
   } catch (error) {
     console.error("forgot-password error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -370,7 +371,7 @@ router.post("/verify-reset-code", async (req, res) => {
 
     res.status(200).json({ message: "Code verified successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
@@ -413,7 +414,7 @@ router.post("/reset-password", async (req, res) => {
 
     res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: clientErrorMessage(error) });
   }
 });
 
