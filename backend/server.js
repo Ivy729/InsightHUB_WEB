@@ -25,25 +25,43 @@ if (!process.env.VERCEL) {
   console.log("ENV PATH:", path.resolve(__dirname, ".env"));
 }
 
-if (!process.env.MONGODB_URI) {
-  const mongoMsg = "MONGODB_URI is missing. Check backend/.env";
-  console.error(mongoMsg);
-  if (require.main === module) {
-    process.exit(1);
-  }
-  throw new Error(mongoMsg);
-}
-
-const usingAtlas = process.env.MONGODB_URI.startsWith("mongodb+srv://");
-console.log(`Mongo URI source loaded (${usingAtlas ? "Atlas" : "Local/Other"})`);
-
-connectDB();
-
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Health check — no MongoDB required (works even if DB is down)
+app.get("/api/health", (req, res) => {
+  const smtpConfigured = Boolean(
+    (process.env.SMTP_HOST || "").trim() &&
+      (process.env.SMTP_USER || "").trim() &&
+      (process.env.SMTP_PASS || "").trim() &&
+      (process.env.SMTP_FROM || "").trim()
+  );
+  res.json({
+    ok: true,
+    message: "Backend running",
+    smtpConfigured,
+    mongoUriSet: Boolean((process.env.MONGODB_URI || "").trim()),
+    runtime: process.env.VERCEL ? "vercel" : "node",
+  });
+});
+
+// Connect MongoDB before API routes (serverless-safe: no process.exit)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database middleware error:", error.message);
+    res.status(503).json({
+      message: "Database unavailable",
+      error: error.message,
+    });
+  }
+});
+
 app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 
 app.use("/api/kpis", kpiRoutes);
@@ -56,25 +74,22 @@ app.use("/api/staff/evidence", staffEvidenceRoutes);
 app.use("/api/staff/notifications", staffNotificationRoutes);
 app.use("/api/staff/progress-history", progressHistoryRoutes);
 
-app.get("/api/health", (req, res) => {
-  const smtpConfigured = Boolean(
-    (process.env.SMTP_HOST || "").trim() &&
-      (process.env.SMTP_USER || "").trim() &&
-      (process.env.SMTP_PASS || "").trim() &&
-      (process.env.SMTP_FROM || "").trim()
-  );
-  res.json({
-    ok: true,
-    message: "Backend running",
-    smtpConfigured,
-    runtime: process.env.VERCEL ? "vercel" : "node",
-  });
-});
-
 module.exports = { app };
 
 if (require.main === module) {
-  app.listen(process.env.PORT || 5000, () => {
-    console.log(`Server running on port ${process.env.PORT || 5000}`);
-  });
+  if (!process.env.MONGODB_URI) {
+    console.error("MONGODB_URI is missing. Check backend/.env");
+    process.exit(1);
+  }
+
+  connectDB()
+    .then(() => {
+      app.listen(process.env.PORT || 5000, () => {
+        console.log(`Server running on port ${process.env.PORT || 5000}`);
+      });
+    })
+    .catch((error) => {
+      console.error(error.message);
+      process.exit(1);
+    });
 }
