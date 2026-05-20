@@ -42,8 +42,9 @@ const sendResetCodeEmail = async (toEmail, code) => {
   if (!from) missing.push("SMTP_FROM");
 
   if (missing.length > 0) {
+    const runtime = process.env.VERCEL ? "vercel" : "local";
     throw new Error(
-      `SMTP is not configured correctly. Missing: ${missing.join(", ")}`
+      `SMTP is not configured correctly. Missing: ${missing.join(", ")}. (API runtime: ${runtime})`
     );
   }
 
