@@ -11,8 +11,12 @@ const router = express.Router();
 
 const uploadsDir = path.resolve(__dirname, "..", "uploads");
 const avatarDir = path.resolve(uploadsDir, "avatars");
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
+try {
+  if (!fs.existsSync(avatarDir)) {
+    fs.mkdirSync(avatarDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn("Avatar upload directory not writable:", err.message);
 }
 
 const avatarStorage = multer.diskStorage({
