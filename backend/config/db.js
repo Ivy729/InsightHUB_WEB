@@ -6,10 +6,26 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
+function normalizeMongoUri(raw) {
+  let uri = String(raw || "").trim();
+  if (
+    (uri.startsWith('"') && uri.endsWith('"')) ||
+    (uri.startsWith("'") && uri.endsWith("'"))
+  ) {
+    uri = uri.slice(1, -1).trim();
+  }
+  return uri;
+}
+
 const connectDB = async () => {
-  const uri = (process.env.MONGODB_URI || "").trim();
+  const uri = normalizeMongoUri(process.env.MONGODB_URI);
   if (!uri) {
     throw new Error("MONGODB_URI is missing. Check backend/.env or Vercel env vars.");
+  }
+  if (!/^mongodb(\+srv)?:\/\//i.test(uri)) {
+    throw new Error(
+      "MONGODB_URI must start with mongodb:// or mongodb+srv:// (check Vercel env value)."
+    );
   }
 
   if (cached.conn) {
