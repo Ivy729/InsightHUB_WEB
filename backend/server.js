@@ -22,8 +22,12 @@ console.log("ENV PATH:", path.resolve(__dirname, ".env"));
 console.log("MONGO:", process.env.MONGODB_URI);
 
 if (!process.env.MONGODB_URI) {
-  console.error("MONGODB_URI is missing. Check backend/.env");
-  process.exit(1);
+  const mongoMsg = "MONGODB_URI is missing. Check backend/.env";
+  console.error(mongoMsg);
+  if (require.main === module) {
+    process.exit(1);
+  }
+  throw new Error(mongoMsg);
 }
 
 const usingAtlas = process.env.MONGODB_URI.startsWith("mongodb+srv://");
@@ -52,6 +56,10 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });
 });
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`Server running on port ${process.env.PORT || 5000}`);
-});
+module.exports = { app };
+
+if (require.main === module) {
+  app.listen(process.env.PORT || 5000, () => {
+    console.log(`Server running on port ${process.env.PORT || 5000}`);
+  });
+}
