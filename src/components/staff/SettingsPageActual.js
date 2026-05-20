@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../apiClient';
+import PasswordFieldWithToggle from '../PasswordFieldWithToggle';
 
 const SettingsPage = () => {
   const [use24Hour, setUse24Hour] = useState(false);
@@ -248,39 +249,19 @@ const SettingsPage = () => {
         <div style={{ padding: '22px 28px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
-                Current Password
-              </label>
-              <input
-                type="password"
+              <PasswordFieldWithToggle
+                label="Current Password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
-                }}
+                autoComplete="current-password"
               />
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
-                New Password
-              </label>
-              <input
-                type="password"
+              <PasswordFieldWithToggle
+                label="New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
-                }}
+                autoComplete="new-password"
               />
               <div style={{
                 height: '4px',
@@ -301,21 +282,11 @@ const SettingsPage = () => {
               </div>
             </div>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: '#1a2233', display: 'block', marginBottom: '6px' }}>
-                Confirm New Password
-              </label>
-              <input
-                type="password"
+              <PasswordFieldWithToggle
+                label="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '14px'
-                }}
+                autoComplete="new-password"
               />
             </div>
           </div>
