@@ -1,6 +1,17 @@
 /**
- * Base URL for the Express API. Set REACT_APP_API_URL in Vercel (and optional .env.local for dev).
- * Create React App only exposes env vars prefixed with REACT_APP_.
+ * API base URL for Express.
+ * - Local dev: http://localhost:5000 (or REACT_APP_API_URL from .env.local)
+ * - Vercel production: REACT_APP_API_URL, or same-origin "" when unset (relative /api/... calls)
  */
-export const API_BASE_URL =
-  (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+function resolveApiBaseUrl() {
+  const fromEnv = (process.env.REACT_APP_API_URL || "").trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  if (process.env.NODE_ENV === "production") {
+    return "";
+  }
+  return "http://localhost:5000";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
