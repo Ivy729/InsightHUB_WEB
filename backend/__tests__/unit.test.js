@@ -109,7 +109,7 @@ describe("KPI Effective Status Logic (UT-02)", () => {
   });
 });
 
-describe("Express Application Config (UT-03)", () => {
+describe("Backend configuration and health route (UT-03)", () => {
   test("Health route is registered", async () => {
     const res = await request(app).get("/api/health");
     expect(res.statusCode).toBe(200);
